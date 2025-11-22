@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  base: '/trading-tracker2/',
   server: {
     host: true, // Allow external access (ngrok)
     strictPort: false,
