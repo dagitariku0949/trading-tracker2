@@ -1,0 +1,63 @@
+===========================================
+QUICK GITHUB UPLOAD COMMANDS
+===========================================
+
+STEP 1: Install Git (if not installed)
+---------------------------------------
+Download from: https://git-scm.com/download/win
+Then restart your terminal
+
+
+STEP 2: Initialize Repository
+---------------------------------------
+git init
+git add .
+git commit -m "Initial commit: LEAP Trading Dashboard"
+
+
+STEP 3: Create GitHub Repository
+---------------------------------------
+1. Go to: https://github.com/new
+2. Repository name: trading-dashboard
+3. Description: Professional trading journal with discipline tracking
+4. Choose Public or Private
+5. DO NOT check "Initialize with README"
+6. Click "Create repository"
+
+
+STEP 4: Connect and Push
+---------------------------------------
+Replace YOUR_USERNAME with your GitHub username:
+
+git remote add origin https://github.com/YOUR_USERNAME/trading-dashboard.git
+git branch -M main
+git push -u origin main
+
+
+DONE! Your project is now on GitHub!
+===========================================
+
+FUTURE UPDATES:
+---------------------------------------
+After making changes:
+
+git add .
+git commit -m "Description of changes"
+git push
+
+
+USEFUL COMMANDS:
+---------------------------------------
+git status              # Check what changed
+git log --oneline       # View commit history
+git pull                # Get latest changes
+git clone <url>         # Clone repository
+
+
+TROUBLESHOOTING:
+---------------------------------------
+If push fails with authentication:
+1. Go to GitHub Settings → Developer settings
+2. Personal access tokens → Generate new token
+3. Select "repo" scope
+4. Use token as password when prompted

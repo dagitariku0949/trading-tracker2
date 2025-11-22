@@ -1,0 +1,116 @@
+═══════════════════════════════════════════════════════════════
+    AUTOMATIC TRADE SYNC - INSTALLATION CHECKLIST
+═══════════════════════════════════════════════════════════════
+
+Print this and check off each step as you complete it!
+
+BEFORE YOU START:
+[ ] Dashboard backend is running (cd backend && npm start)
+[ ] Dashboard frontend is running (cd frontend && npm run dev)
+[ ] MT4 or MT5 is installed on your computer
+[ ] You can login to your Exness account on MT4/MT5
+
+═══════════════════════════════════════════════════════════════
+
+STEP 1: OPEN DATA FOLDER
+[ ] Open MT4/MT5
+[ ] Click "File" at top
+[ ] Click "Open Data Folder"
+[ ] A folder window opened
+
+STEP 2: FIND EXPERTS FOLDER
+[ ] In the folder, I see "MQL4" or "MQL5" folder
+[ ] I opened it
+[ ] I see "Experts" folder inside
+[ ] I opened the Experts folder
+[ ] This folder is now open and ready
+
+STEP 3: COPY EA FILE
+[ ] I found my trading-dashboard project folder
+[ ] I see the "MT4_EA" folder inside
+[ ] I opened MT4_EA folder
+[ ] I see "TradingDashboardSync.mq4" file
+[ ] I copied this file (Ctrl+C)
+[ ] I went back to the Experts folder
+[ ] I pasted the file there (Ctrl+V)
+[ ] The file is now in the Experts folder
+
+STEP 4: RESTART MT4/MT5
+[ ] I closed MT4/MT5 completely
+[ ] I opened MT4/MT5 again
+[ ] I logged in to my Exness account
+[ ] It says "Connected" at bottom right
+
+STEP 5: ENABLE WEBREQUEST
+[ ] I clicked "Tools" at top
+[ ] I clicked "Options"
+[ ] I clicked "Expert Advisors" tab
+[ ] I found "Allow WebRequest for listed URL"
+[ ] I checked the box ✅
+[ ] I typed: http://localhost:4000
+[ ] I clicked "Add" or pressed Enter
+[ ] I checked "Allow automated trading" ✅
+[ ] I checked "Allow DLL imports" ✅
+[ ] I clicked "OK"
+
+STEP 6: ATTACH EA TO CHART
+[ ] I opened any chart (any pair)
+[ ] I pressed Ctrl+N (Navigator opened)
+[ ] I found "Expert Advisors" section
+[ ] I clicked the + to expand it
+[ ] I see "TradingDashboardSync" in the list
+[ ] I dragged it onto the chart
+[ ] Settings window appeared
+[ ] I clicked "Common" tab
+[ ] I checked "Allow live trading" ✅
+[ ] I checked "Allow DLL imports" ✅
+[ ] I clicked "OK"
+
+STEP 7: VERIFY IT'S WORKING
+[ ] I see a smiley face 😊 at top-right of chart
+[ ] I clicked "Experts" tab at bottom of MT4/MT5
+[ ] I see "Trading Dashboard Sync EA Started"
+[ ] I see "Initial sync complete: X trades"
+
+STEP 8: TEST IT
+[ ] I opened http://localhost:5173 in browser
+[ ] Dashboard is showing
+[ ] I made a test trade on MT4/MT5
+[ ] I closed the trade
+[ ] I waited 5 seconds
+[ ] I checked "All Trades" tab in dashboard
+[ ] The trade appeared automatically! ✅
+
+═══════════════════════════════════════════════════════════════
+
+IF ALL BOXES ARE CHECKED: YOU'RE DONE! 🎉
+
+Your trades will now sync automatically from Exness to your dashboard!
+
+═══════════════════════════════════════════════════════════════
+
+TROUBLESHOOTING:
+
+Problem: Can't find MT4_EA folder
+→ Look in the same folder where you have "backend" and "frontend"
+
+Problem: Don't see smiley face 😊
+→ Click the "AutoTrading" button at top of MT4/MT5 (should be green)
+→ Re-attach the EA to chart
+
+Problem: "No internet connection" error
+→ Check MT4/MT5 is connected to broker
+→ Check WebRequest is enabled (Step 5)
+
+Problem: Trades not appearing in dashboard
+→ Make sure backend is running on port 4000
+→ Open http://localhost:4000/api/trades (should show [] or trades)
+→ Check Experts tab for error messages
+
+═══════════════════════════════════════════════════════════════
+
+NEED HELP?
+
+Tell me which step number you're stuck on and I'll help you!
+
+═══════════════════════════════════════════════════════════════
