@@ -19,6 +19,7 @@ import AdminPanel from './components/AdminPanel'
 import AdminLogin from './components/AdminLogin'
 import UserLogin from './components/UserLogin'
 import LearningHub from './components/LearningHub'
+import { LearningProvider } from './contexts/LearningContext'
 
 export default function App(){
   const [isUserAuthenticated, setIsUserAuthenticated] = useState(false)
@@ -341,7 +342,8 @@ export default function App(){
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-4 md:p-8">
+    <LearningProvider>
+      <div className="min-h-screen bg-slate-900 text-white p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
@@ -625,5 +627,6 @@ export default function App(){
         )}
       </div>
     </div>
+    </LearningProvider>
   )
 }

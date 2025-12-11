@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useLearning } from '../contexts/LearningContext';
 
 const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) => {
+  const { 
+    learningContent, 
+    addContent, 
+    updateContent, 
+    deleteContent, 
+    publishContent, 
+    unpublishContent 
+  } = useLearning();
   const [serverStatus, setServerStatus] = useState({
     backend: 'checking',
     database: 'checking',
@@ -20,12 +29,7 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
   const [tradingSummary, setTradingSummary] = useState([]);
   const [selectedUserTrades, setSelectedUserTrades] = useState(null);
   const [showTradesModal, setShowTradesModal] = useState(false);
-  const [learningContent, setLearningContent] = useState({
-    courses: [],
-    videos: [],
-    liveStreams: [],
-    resources: []
-  });
+  // Learning content now comes from context
   const [showContentModal, setShowContentModal] = useState(false);
   const [contentModalType, setContentModalType] = useState('');
   const [editingContent, setEditingContent] = useState(null);
@@ -43,7 +47,7 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
     loadSystemInfo();
     loadUsers();
     loadTradingSummary();
-    loadLearningContent();
+    // Learning content loaded from context
     const interval = setInterval(checkServerStatus, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -90,91 +94,7 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
     }
   };
 
-  const loadLearningContent = () => {
-    // Mock learning content (in production, this would come from database)
-    const mockContent = {
-      courses: [
-        {
-          id: 1,
-          title: "Complete Forex Trading Mastery",
-          description: "Master the fundamentals of forex trading",
-          price: "Free",
-          duration: "12 hours",
-          lessons: 24,
-          students: 156,
-          status: "Published",
-          createdAt: "2024-01-15"
-        },
-        {
-          id: 2,
-          title: "Advanced Price Action Strategies",
-          description: "Professional price action techniques",
-          price: "$99",
-          duration: "8 hours",
-          lessons: 16,
-          students: 89,
-          status: "Published",
-          createdAt: "2024-02-10"
-        }
-      ],
-      videos: [
-        {
-          id: 1,
-          title: "How to Identify High Probability Setups",
-          description: "Learn key factors for high probability trades",
-          duration: "15:30",
-          views: 12500,
-          likes: 890,
-          status: "Published",
-          uploadDate: "2024-03-01"
-        },
-        {
-          id: 2,
-          title: "Risk Management Masterclass",
-          description: "Master risk management techniques",
-          duration: "22:15",
-          views: 8900,
-          likes: 654,
-          status: "Published",
-          uploadDate: "2024-03-05"
-        }
-      ],
-      liveStreams: [
-        {
-          id: 1,
-          title: "Weekly Market Analysis",
-          description: "Live analysis of current market conditions",
-          scheduledDate: "2024-12-15T15:00:00Z",
-          duration: "60 minutes",
-          registrations: 45,
-          status: "Scheduled"
-        },
-        {
-          id: 2,
-          title: "Q&A Trading Session",
-          description: "Answer your trading questions live",
-          scheduledDate: "2024-12-18T18:00:00Z",
-          duration: "90 minutes",
-          registrations: 32,
-          status: "Scheduled"
-        }
-      ],
-      resources: [
-        {
-          id: 1,
-          title: "Trading Journal Template",
-          description: "Professional Excel template",
-          type: "Excel",
-          downloads: 234,
-          status: "Published",
-          uploadDate: "2024-02-20"
-        }
-      ]
-    };
-    
-    setLearningContent(mockContent);
-    addLog('Learning content loaded successfully', 'success');
-  };
+  // Learning content is now managed by context
 
   const handleContentAction = (action, type, content = null) => {
     switch (action) {
@@ -208,11 +128,11 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
         }
         break;
       case 'publish':
-        updateContentStatus(type, content.id, 'Published');
+        publishContent(type, content.id);
         addLog(`Published ${type}: ${content.title}`, 'success');
         break;
       case 'unpublish':
-        updateContentStatus(type, content.id, 'Draft');
+        unpublishContent(type, content.id);
         addLog(`Unpublished ${type}: ${content.title}`, 'warning');
         break;
       default:
@@ -245,27 +165,12 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
         newContent.registrations = editingContent ? editingContent.registrations : 0;
       }
 
-      // Update the learning content state
-      setLearningContent(prev => {
-        const contentType = contentModalType === 'stream' ? 'liveStreams' : `${contentModalType}s`;
-        const updatedContent = [...prev[contentType]];
-        
-        if (editingContent) {
-          // Update existing content
-          const index = updatedContent.findIndex(item => item.id === editingContent.id);
-          if (index !== -1) {
-            updatedContent[index] = newContent;
-          }
-        } else {
-          // Add new content
-          updatedContent.push(newContent);
-        }
-        
-        return {
-          ...prev,
-          [contentType]: updatedContent
-        };
-      });
+      // Use context functions to manage content
+      if (editingContent) {
+        updateContent(contentModalType, editingContent.id, newContent);
+      } else {
+        addContent(contentModalType, newContent);
+      }
 
       addLog(`${editingContent ? 'Updated' : 'Created'} ${contentModalType}: ${formData.title}`, 'success');
       setShowContentModal(false);
@@ -278,28 +183,7 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
     }
   };
 
-  const deleteContent = (type, id) => {
-    setLearningContent(prev => {
-      const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
-      return {
-        ...prev,
-        [contentType]: prev[contentType].filter(item => item.id !== id)
-      };
-    });
-  };
-
-  const updateContentStatus = (type, id, status) => {
-    setLearningContent(prev => {
-      const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
-      const updatedContent = prev[contentType].map(item =>
-        item.id === id ? { ...item, status } : item
-      );
-      return {
-        ...prev,
-        [contentType]: updatedContent
-      };
-    });
-  };
+  // Content management functions now come from context
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -1056,6 +940,21 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
                           </td>
                           <td className="py-3">
                             <div className="flex gap-2">
+                              {course.status === 'Draft' ? (
+                                <button
+                                  onClick={() => handleContentAction('publish', 'course', course)}
+                                  className="bg-green-600 hover:bg-green-700 px-2 py-1 rounded text-xs"
+                                >
+                                  Publish
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleContentAction('unpublish', 'course', course)}
+                                  className="bg-yellow-600 hover:bg-yellow-700 px-2 py-1 rounded text-xs"
+                                >
+                                  Unpublish
+                                </button>
+                              )}
                               <button
                                 onClick={() => handleContentAction('edit', 'course', course)}
                                 className="bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs"
@@ -1213,7 +1112,6 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <button
                     onClick={() => {
-                      loadLearningContent();
                       addLog('Learning content refreshed', 'success');
                     }}
                     className="bg-blue-600 hover:bg-blue-700 px-4 py-3 rounded-lg transition-colors text-center"

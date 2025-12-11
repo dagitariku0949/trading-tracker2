@@ -1,126 +1,13 @@
 import React, { useState } from 'react';
+import { useLearning } from '../contexts/LearningContext';
 
 const LearningHub = ({ onBack }) => {
   const [activeCategory, setActiveCategory] = useState('courses');
   const [selectedVideo, setSelectedVideo] = useState(null);
+  const { publishedContent } = useLearning();
 
-  const learningContent = {
-    courses: [
-      {
-        id: 1,
-        title: "Complete Forex Trading Mastery",
-        description: "Master the fundamentals of forex trading from beginner to advanced level",
-        duration: "12 hours",
-        lessons: 24,
-        level: "Beginner to Advanced",
-        price: "Free",
-        thumbnail: "🎓",
-        topics: ["Market Analysis", "Risk Management", "Trading Psychology", "Technical Analysis"]
-      },
-      {
-        id: 2,
-        title: "Advanced Price Action Strategies",
-        description: "Learn professional price action techniques used by institutional traders",
-        duration: "8 hours",
-        lessons: 16,
-        level: "Intermediate",
-        price: "$99",
-        thumbnail: "📊",
-        topics: ["Support & Resistance", "Candlestick Patterns", "Market Structure", "Entry Strategies"]
-      },
-      {
-        id: 3,
-        title: "Trading Psychology Mastery",
-        description: "Develop the mental discipline required for consistent trading success",
-        duration: "6 hours",
-        lessons: 12,
-        level: "All Levels",
-        price: "$79",
-        thumbnail: "🧠",
-        topics: ["Emotional Control", "Discipline", "Risk Psychology", "Mindset Development"]
-      }
-    ],
-    videos: [
-      {
-        id: 1,
-        title: "How to Identify High Probability Setups",
-        description: "Learn the key factors that make a trading setup high probability",
-        duration: "15:30",
-        views: "12.5K",
-        category: "Technical Analysis",
-        thumbnail: "🎯",
-        videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ" // Demo URL
-      },
-      {
-        id: 2,
-        title: "Risk Management: The Key to Long-term Success",
-        description: "Master the art of risk management and position sizing",
-        duration: "22:15",
-        views: "8.9K",
-        category: "Risk Management",
-        thumbnail: "⚖️",
-        videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ"
-      },
-      {
-        id: 3,
-        title: "Reading Market Structure Like a Pro",
-        description: "Understand how institutional traders view market structure",
-        duration: "18:45",
-        views: "15.2K",
-        category: "Market Analysis",
-        thumbnail: "🏗️",
-        videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ"
-      },
-      {
-        id: 4,
-        title: "Building Your Trading Plan",
-        description: "Create a comprehensive trading plan for consistent results",
-        duration: "25:10",
-        views: "6.7K",
-        category: "Strategy",
-        thumbnail: "📋",
-        videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ"
-      }
-    ],
-    resources: [
-      {
-        id: 1,
-        title: "Trading Journal Template",
-        description: "Professional Excel template for tracking your trades",
-        type: "Download",
-        format: "Excel (.xlsx)",
-        size: "2.5 MB",
-        icon: "📊"
-      },
-      {
-        id: 2,
-        title: "Risk Management Calculator",
-        description: "Calculate position sizes and risk-reward ratios",
-        type: "Tool",
-        format: "Web App",
-        size: "Online",
-        icon: "🧮"
-      },
-      {
-        id: 3,
-        title: "Market Analysis Checklist",
-        description: "Step-by-step checklist for analyzing market conditions",
-        type: "Download",
-        format: "PDF",
-        size: "1.2 MB",
-        icon: "✅"
-      },
-      {
-        id: 4,
-        title: "Trading Psychology Workbook",
-        description: "Exercises and techniques for developing trading discipline",
-        type: "Download",
-        format: "PDF",
-        size: "3.8 MB",
-        icon: "📚"
-      }
-    ]
-  };
+  // Use published content from context instead of static data
+  const learningContent = publishedContent;
 
   const categories = [
     { id: 'courses', label: 'Courses', icon: '🎓' },
