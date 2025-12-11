@@ -29,6 +29,9 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
   const [showContentModal, setShowContentModal] = useState(false);
   const [contentModalType, setContentModalType] = useState('');
   const [editingContent, setEditingContent] = useState(null);
+  const [formData, setFormData] = useState({});
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
   const [systemInfo, setSystemInfo] = useState({
     memory: '0 MB',
     cpu: '0%',
@@ -178,29 +181,161 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
       case 'add':
         setContentModalType(type);
         setEditingContent(null);
+        setFormData({});
         setShowContentModal(true);
         addLog(`Opening ${type} creation form`, 'info');
         break;
       case 'edit':
         setContentModalType(type);
         setEditingContent(content);
+        // Initialize form data with existing content
+        setFormData({
+          title: content.title || '',
+          description: content.description || '',
+          price: content.price || '',
+          duration: content.duration || '',
+          lessons: content.lessons || '',
+          scheduledDate: content.scheduledDate ? new Date(content.scheduledDate).toISOString().slice(0, 16) : '',
+          platform: content.platform || ''
+        });
         setShowContentModal(true);
         addLog(`Editing ${type}: ${content.title}`, 'info');
         break;
       case 'delete':
         if (confirm(`Delete ${type}: ${content.title}?`)) {
+          deleteContent(type, content.id);
           addLog(`Deleted ${type}: ${content.title}`, 'warning');
         }
         break;
       case 'publish':
+        updateContentStatus(type, content.id, 'Published');
         addLog(`Published ${type}: ${content.title}`, 'success');
         break;
       case 'unpublish':
+        updateContentStatus(type, content.id, 'Draft');
         addLog(`Unpublished ${type}: ${content.title}`, 'warning');
         break;
       default:
         break;
     }
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    setIsUploading(true);
+    
+    try {
+      const newContent = {
+        id: editingContent ? editingContent.id : Date.now(),
+        ...formData,
+        status: editingContent ? editingContent.status : 'Draft',
+        createdAt: editingContent ? editingContent.createdAt : new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      // Add specific fields based on content type
+      if (contentModalType === 'course') {
+        newContent.students = editingContent ? editingContent.students : 0;
+        newContent.lessons = parseInt(formData.lessons) || 0;
+      } else if (contentModalType === 'video') {
+        newContent.views = editingContent ? editingContent.views : 0;
+        newContent.likes = editingContent ? editingContent.likes : 0;
+        newContent.uploadDate = editingContent ? editingContent.uploadDate : new Date().toISOString();
+      } else if (contentModalType === 'stream') {
+        newContent.registrations = editingContent ? editingContent.registrations : 0;
+      }
+
+      // Update the learning content state
+      setLearningContent(prev => {
+        const contentType = contentModalType === 'stream' ? 'liveStreams' : `${contentModalType}s`;
+        const updatedContent = [...prev[contentType]];
+        
+        if (editingContent) {
+          // Update existing content
+          const index = updatedContent.findIndex(item => item.id === editingContent.id);
+          if (index !== -1) {
+            updatedContent[index] = newContent;
+          }
+        } else {
+          // Add new content
+          updatedContent.push(newContent);
+        }
+        
+        return {
+          ...prev,
+          [contentType]: updatedContent
+        };
+      });
+
+      addLog(`${editingContent ? 'Updated' : 'Created'} ${contentModalType}: ${formData.title}`, 'success');
+      setShowContentModal(false);
+      setEditingContent(null);
+      setFormData({});
+    } catch (error) {
+      addLog(`Failed to ${editingContent ? 'update' : 'create'} ${contentModalType}: ${error.message}`, 'error');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const deleteContent = (type, id) => {
+    setLearningContent(prev => {
+      const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
+      return {
+        ...prev,
+        [contentType]: prev[contentType].filter(item => item.id !== id)
+      };
+    });
+  };
+
+  const updateContentStatus = (type, id, status) => {
+    setLearningContent(prev => {
+      const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
+      const updatedContent = prev[contentType].map(item =>
+        item.id === id ? { ...item, status } : item
+      );
+      return {
+        ...prev,
+        [contentType]: updatedContent
+      };
+    });
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleFileUpload = async (file, type = 'video') => {
+    if (!file) return;
+    
+    setIsUploading(true);
+    setUploadProgress(0);
+    
+    // Simulate file upload progress
+    const uploadSimulation = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(uploadSimulation);
+          setIsUploading(false);
+          addLog(`${type} file uploaded successfully: ${file.name}`, 'success');
+          
+          // Update form data with file info
+          setFormData(prev => ({
+            ...prev,
+            fileName: file.name,
+            fileSize: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+            fileType: file.type,
+            duration: type === 'video' ? '00:00' : undefined
+          }));
+          
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 200);
   };
 
   const loadUsers = async () => {
@@ -1449,24 +1584,28 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
                 </h2>
               </div>
 
-              <form className="space-y-4">
+              <form onSubmit={handleFormSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Title</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Title *</label>
                   <input
                     type="text"
-                    defaultValue={editingContent?.title || ''}
+                    value={formData.title || ''}
+                    onChange={(e) => handleInputChange('title', e.target.value)}
                     className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter title"
+                    required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Description *</label>
                   <textarea
-                    defaultValue={editingContent?.description || ''}
+                    value={formData.description || ''}
+                    onChange={(e) => handleInputChange('description', e.target.value)}
                     rows={3}
                     className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter description"
+                    required
                   />
                 </div>
 
@@ -1474,31 +1613,38 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
                   <>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Price</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Price *</label>
                         <input
                           type="text"
-                          defaultValue={editingContent?.price || ''}
+                          value={formData.price || ''}
+                          onChange={(e) => handleInputChange('price', e.target.value)}
                           className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="e.g., $99 or Free"
+                          required
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Duration</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Duration *</label>
                         <input
                           type="text"
-                          defaultValue={editingContent?.duration || ''}
+                          value={formData.duration || ''}
+                          onChange={(e) => handleInputChange('duration', e.target.value)}
                           className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="e.g., 8 hours"
+                          required
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Number of Lessons</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Number of Lessons *</label>
                       <input
                         type="number"
-                        defaultValue={editingContent?.lessons || ''}
+                        value={formData.lessons || ''}
+                        onChange={(e) => handleInputChange('lessons', e.target.value)}
                         className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Enter number of lessons"
+                        required
+                        min="1"
                       />
                     </div>
                   </>
@@ -1507,22 +1653,69 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
                 {contentModalType === 'video' && (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Video File</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Video File *</label>
                       <div className="border-2 border-dashed border-slate-600 rounded-lg p-6 text-center">
-                        <div className="text-4xl mb-2">📁</div>
-                        <p className="text-gray-400 mb-2">Drag and drop video file here</p>
-                        <button type="button" className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors">
-                          Choose File
-                        </button>
+                        {formData.fileName ? (
+                          <div className="text-green-400">
+                            <div className="text-2xl mb-2">✅</div>
+                            <p className="font-medium">{formData.fileName}</p>
+                            <p className="text-sm text-gray-400">{formData.fileSize}</p>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="text-4xl mb-2">📁</div>
+                            <p className="text-gray-400 mb-2">Drag and drop video file here</p>
+                            <input
+                              type="file"
+                              accept="video/*"
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) handleFileUpload(file, 'video');
+                              }}
+                              className="hidden"
+                              id="video-upload"
+                            />
+                            <label
+                              htmlFor="video-upload"
+                              className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors cursor-pointer inline-block"
+                            >
+                              Choose File
+                            </label>
+                          </>
+                        )}
+                        {isUploading && (
+                          <div className="mt-4">
+                            <div className="bg-gray-700 rounded-full h-2">
+                              <div 
+                                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${uploadProgress}%` }}
+                              ></div>
+                            </div>
+                            <p className="text-sm text-gray-400 mt-2">Uploading... {uploadProgress}%</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">Thumbnail</label>
                       <div className="border-2 border-dashed border-slate-600 rounded-lg p-4 text-center">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) handleFileUpload(file, 'thumbnail');
+                          }}
+                          className="hidden"
+                          id="thumbnail-upload"
+                        />
                         <p className="text-gray-400 mb-2">Upload thumbnail image</p>
-                        <button type="button" className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg transition-colors">
+                        <label
+                          htmlFor="thumbnail-upload"
+                          className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg transition-colors cursor-pointer inline-block"
+                        >
                           Choose Image
-                        </button>
+                        </label>
                       </div>
                     </div>
                   </>
@@ -1532,30 +1725,41 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
                   <>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Scheduled Date</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Scheduled Date *</label>
                         <input
                           type="datetime-local"
-                          defaultValue={editingContent?.scheduledDate ? new Date(editingContent.scheduledDate).toISOString().slice(0, 16) : ''}
+                          value={formData.scheduledDate || ''}
+                          onChange={(e) => handleInputChange('scheduledDate', e.target.value)}
                           className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Duration (minutes)</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Duration (minutes) *</label>
                         <input
                           type="number"
-                          defaultValue={editingContent?.duration ? parseInt(editingContent.duration) : ''}
+                          value={formData.duration || ''}
+                          onChange={(e) => handleInputChange('duration', e.target.value)}
                           className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="60"
+                          required
+                          min="1"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Stream Platform</label>
-                      <select className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option>YouTube Live</option>
-                        <option>Twitch</option>
-                        <option>Facebook Live</option>
-                        <option>Custom Platform</option>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Stream Platform *</label>
+                      <select 
+                        value={formData.platform || ''}
+                        onChange={(e) => handleInputChange('platform', e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="">Select Platform</option>
+                        <option value="YouTube Live">YouTube Live</option>
+                        <option value="Twitch">Twitch</option>
+                        <option value="Facebook Live">Facebook Live</option>
+                        <option value="Custom Platform">Custom Platform</option>
                       </select>
                     </div>
                   </>
@@ -1567,22 +1771,20 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
                     onClick={() => {
                       setShowContentModal(false);
                       setEditingContent(null);
+                      setFormData({});
                     }}
                     className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 rounded-lg font-semibold transition-colors"
+                    disabled={isUploading}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      addLog(`${editingContent ? 'Updated' : 'Created'} ${contentModalType} successfully`, 'success');
-                      setShowContentModal(false);
-                      setEditingContent(null);
-                    }}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition-colors"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white py-3 rounded-lg font-semibold transition-colors"
+                    disabled={isUploading || !formData.title || !formData.description}
                   >
-                    {editingContent ? 'Update' : 'Create'} {contentModalType.charAt(0).toUpperCase() + contentModalType.slice(1)}
+                    {isUploading ? 'Processing...' : 
+                     `${editingContent ? 'Update' : 'Create'} ${contentModalType.charAt(0).toUpperCase() + contentModalType.slice(1)}`}
                   </button>
                 </div>
               </form>
