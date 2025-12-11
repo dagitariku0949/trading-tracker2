@@ -29,6 +29,9 @@ export default function App(){
   const [showAdmin, setShowAdmin] = useState(false)
   const [showAdminLogin, setShowAdminLogin] = useState(false)
   const [isOwnerAuthenticated, setIsOwnerAuthenticated] = useState(false)
+  
+  // Check if this is admin mode based on URL
+  const [isAdminMode, setIsAdminMode] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
   const [showImport, setShowImport] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -75,6 +78,18 @@ export default function App(){
   }
 
   useEffect(() => {
+    // Check if URL contains admin parameter
+    const urlParams = new URLSearchParams(window.location.search)
+    const isAdmin = urlParams.get('admin') === 'true' || window.location.pathname.includes('/admin')
+    
+    if (isAdmin) {
+      setIsAdminMode(true)
+      setShowLanding(false)
+      setShowAdminLogin(true)
+      console.log('🔧 Admin mode activated - Access via URL parameter')
+      return
+    }
+    
     // Check if user is already authenticated
     checkUserAuthentication()
   }, [])
@@ -285,6 +300,57 @@ export default function App(){
       await fetchData()
     } catch (err) {
       console.error('Error closing trade:', err)
+    }
+  }
+
+  // ADMIN MODE - Separate admin interface
+  if (isAdminMode) {
+    if (showAdminLogin && !isOwnerAuthenticated) {
+      return (
+        <LearningProvider>
+          <div className="min-h-screen bg-slate-900 text-white">
+            {/* Admin Mode Header */}
+            <div className="bg-orange-600 text-white p-4 text-center">
+              <h1 className="text-2xl font-bold">🔧 ADMIN PANEL - OWNER ACCESS ONLY</h1>
+              <p className="text-sm opacity-90">Dedicated admin interface for content management</p>
+            </div>
+            <AdminLogin 
+              onLogin={handleOwnerLogin}
+              onBack={() => {
+                setIsAdminMode(false)
+                setShowAdminLogin(false)
+                setShowLanding(true)
+                window.history.replaceState({}, '', window.location.pathname)
+              }}
+            />
+          </div>
+        </LearningProvider>
+      )
+    }
+    
+    if (isOwnerAuthenticated) {
+      return (
+        <LearningProvider>
+          <div className="min-h-screen bg-slate-900 text-white">
+            {/* Admin Mode Header */}
+            <div className="bg-green-600 text-white p-4 text-center">
+              <h1 className="text-2xl font-bold">🔧 ADMIN PANEL - AUTHENTICATED</h1>
+              <p className="text-sm opacity-90">Full admin access for content management</p>
+            </div>
+            <AdminPanel 
+              onBackToDashboard={() => {
+                setIsAdminMode(false)
+                setShowAdmin(false)
+                setShowLanding(true)
+                window.history.replaceState({}, '', window.location.pathname)
+              }}
+              onLogout={handleOwnerLogout}
+              trades={trades}
+              metrics={metrics}
+            />
+          </div>
+        </LearningProvider>
+      )
     }
   }
 

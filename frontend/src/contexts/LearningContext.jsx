@@ -27,6 +27,16 @@ export const LearningProvider = ({ children }) => {
     loadLearningContent();
   }, []);
 
+  // Auto-refresh content every 30 seconds to sync changes across browsers
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('Auto-refreshing learning content...');
+      loadLearningContent();
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
 
 
   const loadLearningContent = async () => {
@@ -209,16 +219,9 @@ export const LearningProvider = ({ children }) => {
         if (response.ok) {
           const result = await response.json();
           if (result.success) {
-            // Update local state with API response
-            const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
-            const updatedContent = {
-              ...learningContent,
-              [contentType]: [...learningContent[contentType], result.data]
-            };
-            
-            setLearningContent(updatedContent);
-            localStorage.setItem('learningContent', JSON.stringify(updatedContent));
-            console.log('Content added via API:', result.data);
+            // Refresh all content to ensure consistency across browsers
+            await loadLearningContent();
+            console.log('Content added via API, refreshed all content');
             return result.data;
           }
         }
@@ -271,18 +274,9 @@ export const LearningProvider = ({ children }) => {
         if (response.ok) {
           const result = await response.json();
           if (result.success) {
-            // Update local state with API response
-            const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
-            const updatedContent = {
-              ...learningContent,
-              [contentType]: learningContent[contentType].map(item =>
-                item.id === id ? result.data : item
-              )
-            };
-            
-            setLearningContent(updatedContent);
-            localStorage.setItem('learningContent', JSON.stringify(updatedContent));
-            console.log('Content updated via API:', result.data);
+            // Refresh all content to ensure consistency across browsers
+            await loadLearningContent();
+            console.log('Content updated via API, refreshed all content');
             return;
           }
         }
@@ -320,16 +314,9 @@ export const LearningProvider = ({ children }) => {
         if (response.ok) {
           const result = await response.json();
           if (result.success) {
-            // Update local state
-            const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
-            const updatedContent = {
-              ...learningContent,
-              [contentType]: learningContent[contentType].filter(item => item.id !== id)
-            };
-            
-            setLearningContent(updatedContent);
-            localStorage.setItem('learningContent', JSON.stringify(updatedContent));
-            console.log('Content deleted via API:', { type, id });
+            // Refresh all content to ensure consistency across browsers
+            await loadLearningContent();
+            console.log('Content deleted via API, refreshed all content');
             return;
           }
         }
