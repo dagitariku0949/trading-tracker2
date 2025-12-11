@@ -301,10 +301,16 @@ export default function App(){
         <LandingPage 
           onEnter={() => setShowLanding(false)}
           onNavigate={(tab) => {
+            console.log('App.jsx: onNavigate called with tab:', tab);
+            console.log('App.jsx: Current showLearning state:', showLearning);
+            console.log('App.jsx: Current showLanding state:', showLanding);
+            
             if (tab === 'learning') {
+              console.log('App.jsx: Setting showLearning to true');
               setShowLearning(true)
               setShowLanding(false)
             } else {
+              console.log('App.jsx: Setting activeTab to:', tab);
               setActiveTab(tab)
               setShowLanding(false)
             }
@@ -315,13 +321,20 @@ export default function App(){
   }
 
   if (showLearning) {
+    console.log('RENDERING LEARNING HUB - showLearning is true');
     return (
-      <LearningHub 
-        onBack={() => {
-          setShowLearning(false)
-          setShowLanding(true)
-        }}
-      />
+      <div>
+        <div style={{background: 'red', color: 'white', padding: '20px', textAlign: 'center'}}>
+          DEBUG: Learning Hub should render here - {new Date().toISOString()}
+        </div>
+        <LearningHub 
+          onBack={() => {
+            console.log('Back button clicked');
+            setShowLearning(false)
+            setShowLanding(true)
+          }}
+        />
+      </div>
     )
   }
 

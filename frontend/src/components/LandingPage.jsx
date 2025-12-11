@@ -1,5 +1,9 @@
+import React from 'react';
+
 export default function LandingPage({ onEnter, onNavigate }) {
   const handleCardClick = (tab) => {
+    console.log('LandingPage: handleCardClick called with tab:', tab);
+    console.log('LandingPage: onNavigate function:', onNavigate);
     onNavigate(tab)
   }
 

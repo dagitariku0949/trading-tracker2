@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 
 const LearningHubSimple = ({ onBack }) => {
+  console.log('LearningHubSimple component is rendering!', new Date().toISOString());
+  
   const [activeCategory, setActiveCategory] = useState('courses');
   const [selectedVideo, setSelectedVideo] = useState(null);
 
