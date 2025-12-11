@@ -40,3 +40,63 @@ CREATE TABLE IF NOT EXISTS account_stats (
   losing_trades INT DEFAULT 0,
   created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Learning Content Tables
+CREATE TABLE IF NOT EXISTS learning_courses (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  duration VARCHAR(50),
+  lessons INT DEFAULT 0,
+  level VARCHAR(50),
+  price VARCHAR(50),
+  thumbnail VARCHAR(10),
+  topics TEXT[], -- Array of topics
+  status VARCHAR(20) DEFAULT 'Draft',
+  students INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS learning_videos (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  duration VARCHAR(20),
+  views INT DEFAULT 0,
+  category VARCHAR(100),
+  thumbnail VARCHAR(10),
+  video_url TEXT,
+  status VARCHAR(20) DEFAULT 'Draft',
+  likes INT DEFAULT 0,
+  upload_date TIMESTAMP DEFAULT NOW(),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS learning_streams (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  scheduled_date TIMESTAMP,
+  duration VARCHAR(50),
+  registrations INT DEFAULT 0,
+  status VARCHAR(20) DEFAULT 'Scheduled',
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS learning_resources (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  type VARCHAR(50),
+  format VARCHAR(50),
+  size VARCHAR(20),
+  icon VARCHAR(10),
+  status VARCHAR(20) DEFAULT 'Draft',
+  downloads INT DEFAULT 0,
+  upload_date TIMESTAMP DEFAULT NOW(),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);

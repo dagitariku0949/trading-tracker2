@@ -5,7 +5,14 @@ const LearningHub = ({ onBack }) => {
   const [activeCategory, setActiveCategory] = useState('courses');
   const [selectedVideo, setSelectedVideo] = useState(null);
   
-  const { publishedContent, loading, error } = useLearning();
+  const { publishedContent, loading, error, forceRefresh } = useLearning();
+
+  // DEBUG: Log the actual content
+  console.log('=== LEARNING HUB DEBUG ===');
+  console.log('Published Content:', publishedContent);
+  console.log('Courses:', publishedContent?.courses);
+  console.log('Courses Count:', publishedContent?.courses?.length);
+  console.log('========================');
 
   // Show loading state
   if (loading) {
@@ -58,12 +65,31 @@ const LearningHub = ({ onBack }) => {
       <div className="bg-gradient-to-r from-emerald-600 to-blue-600 text-white px-6 py-8">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between mb-6">
-            <button
-              onClick={onBack}
-              className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors"
-            >
-              ← Back to Dashboard
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={onBack}
+                className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors"
+              >
+                ← Back to Dashboard
+              </button>
+              <button
+                onClick={() => {
+                  console.log('Refresh button clicked!');
+                  if (forceRefresh) {
+                    forceRefresh();
+                  } else {
+                    console.error('forceRefresh function not available');
+                    // Fallback: clear localStorage and reload
+                    localStorage.clear();
+                    window.location.reload();
+                  }
+                }}
+                className="flex items-center gap-2 bg-red-500/80 hover:bg-red-600 px-4 py-2 rounded-lg transition-colors font-semibold"
+                title="Force refresh content - clears all caches"
+              >
+                🔄 FORCE REFRESH
+              </button>
+            </div>
             <div className="text-right">
               <div className="text-sm opacity-90">Learn with</div>
               <div className="text-2xl font-bold">Dagim Tariku</div>
@@ -84,10 +110,25 @@ const LearningHub = ({ onBack }) => {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-8">
+        {/* DEBUG BANNER - Shows version info */}
+        <div className="bg-red-600 text-white p-4 rounded-lg mb-6 text-center">
+          <div className="text-xl font-bold">🚨 DEBUG MODE - VERSION 2024-12-11-HARDCODED 🚨</div>
+          <div className="text-sm mt-2">
+            Courses Count: {learningContent.courses?.length || 0} | 
+            Expected: 3 courses | 
+            Source: Hardcoded Frontend | 
+            Time: {new Date().toLocaleTimeString()}
+          </div>
+          <div className="text-xs mt-1">
+            Course Titles: {learningContent.courses?.map(c => c.title).join(' | ') || 'None'}
+          </div>
+        </div>
+
         {/* Category Navigation */}
         <div className="flex justify-center mb-8">
-          <div className="flex bg-slate-800 rounded-lg p-1">
-            {categories.map(category => (
+          <div className="flex items-center gap-4">
+            <div className="flex bg-slate-800 rounded-lg p-1">
+              {categories.map(category => (
               <button
                 key={category.id}
                 onClick={() => setActiveCategory(category.id)}
@@ -101,6 +142,20 @@ const LearningHub = ({ onBack }) => {
                 {category.label}
               </button>
             ))}
+            </div>
+            
+            {/* Refresh Button */}
+            <button
+              onClick={() => {
+                console.log('Secondary refresh button clicked!');
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.reload();
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors font-bold"
+            >
+              🔄 REFRESH CONTENT
+            </button>
           </div>
         </div>
 

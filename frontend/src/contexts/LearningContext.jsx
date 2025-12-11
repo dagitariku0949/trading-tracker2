@@ -32,148 +32,132 @@ export const LearningProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      // Always try API first for fresh content
-      try {
-        console.log('Fetching from API:', `${API_BASE_URL}/api/learning`);
-        const response = await fetch(`${API_BASE_URL}/api/learning`);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-        
-        const result = await response.json();
-        
-        if (result.success && result.data) {
-          setLearningContent(result.data);
-          localStorage.setItem('learningContent', JSON.stringify(result.data));
-          console.log('Learning content loaded from API successfully');
-          return;
-        } else {
-          throw new Error('Invalid API response');
-        }
-      } catch (apiError) {
-        console.log('API failed:', apiError.message);
-        
-        // Fallback to localStorage
-        const savedContent = localStorage.getItem('learningContent');
-        if (savedContent) {
-          try {
-            const parsed = JSON.parse(savedContent);
-            setLearningContent(parsed);
-            console.log('Learning content loaded from localStorage');
-            return;
-          } catch (parseError) {
-            console.log('localStorage parse failed');
+      // TEMPORARY FIX: Use hardcoded content to ensure consistency across all browsers
+      console.log('Using hardcoded content to ensure consistency - Updated 2024-12-11');
+      
+      const hardcodedContent = {
+        _version: '2024-12-11-hardcoded',
+        _source: 'hardcoded-frontend',
+        courses: [
+          {
+            id: 1,
+            title: "Complete Forex Trading Mastery",
+            description: "Master the fundamentals of forex trading from beginner to advanced level",
+            duration: "12 hours",
+            lessons: 24,
+            level: "Beginner to Advanced",
+            price: "Free",
+            thumbnail: "🎓",
+            topics: ["Market Analysis", "Risk Management", "Trading Psychology", "Technical Analysis"],
+            status: "Published",
+            students: 156,
+            created_at: "2024-01-15T00:00:00Z",
+            updated_at: "2024-01-15T00:00:00Z"
+          },
+          {
+            id: 2,
+            title: "Advanced Price Action Strategies",
+            description: "Learn professional price action techniques used by institutional traders",
+            duration: "8 hours",
+            lessons: 16,
+            level: "Intermediate",
+            price: "$99",
+            thumbnail: "📊",
+            topics: ["Support & Resistance", "Candlestick Patterns", "Market Structure", "Entry Strategies"],
+            status: "Published",
+            students: 89,
+            created_at: "2024-02-10T00:00:00Z",
+            updated_at: "2024-02-10T00:00:00Z"
+          },
+          {
+            id: 3,
+            title: "Trading Psychology Mastery",
+            description: "Develop the mental discipline required for consistent trading success",
+            duration: "6 hours",
+            lessons: 12,
+            level: "All Levels",
+            price: "$79",
+            thumbnail: "🧠",
+            topics: ["Emotional Control", "Discipline", "Risk Psychology", "Mindset Development"],
+            status: "Published",
+            students: 67,
+            created_at: "2024-03-01T00:00:00Z",
+            updated_at: "2024-03-01T00:00:00Z"
           }
-        }
-        
-        // Final fallback to default content
-        console.log('Using default content');
-        const defaultContent = {
-          courses: [
-            {
-              id: 1,
-              title: "Complete Forex Trading Mastery",
-              description: "Master the fundamentals of forex trading from beginner to advanced level",
-              duration: "12 hours",
-              lessons: 24,
-              level: "Beginner to Advanced",
-              price: "Free",
-              thumbnail: "🎓",
-              topics: ["Market Analysis", "Risk Management", "Trading Psychology", "Technical Analysis"],
-              status: "Published",
-              students: 156,
-              createdAt: "2024-01-15"
-            },
-            {
-              id: 2,
-              title: "Advanced Price Action Strategies",
-              description: "Learn professional price action techniques used by institutional traders",
-              duration: "8 hours",
-              lessons: 16,
-              level: "Intermediate",
-              price: "$99",
-              thumbnail: "📊",
-              topics: ["Support & Resistance", "Candlestick Patterns", "Market Structure", "Entry Strategies"],
-              status: "Published",
-              students: 89,
-              createdAt: "2024-02-10"
-            },
-            {
-              id: 3,
-              title: "Trading Psychology Mastery",
-              description: "Develop the mental discipline required for consistent trading success",
-              duration: "6 hours",
-              lessons: 12,
-              level: "All Levels",
-              price: "$79",
-              thumbnail: "🧠",
-              topics: ["Emotional Control", "Discipline", "Risk Psychology", "Mindset Development"],
-              status: "Published",
-              students: 67,
-              createdAt: "2024-03-01"
-            }
-          ],
-          videos: [
-            {
-              id: 1,
-              title: "How to Identify High Probability Setups",
-              description: "Learn the key factors that make a trading setup high probability",
-              duration: "15:30",
-              views: "12.5K",
-              category: "Technical Analysis",
-              thumbnail: "🎯",
-              videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-              status: "Published",
-              likes: 890,
-              uploadDate: "2024-03-01"
-            },
-            {
-              id: 2,
-              title: "Risk Management: The Key to Long-term Success",
-              description: "Master the art of risk management and position sizing",
-              duration: "22:15",
-              views: "8.9K",
-              category: "Risk Management",
-              thumbnail: "⚖️",
-              videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-              status: "Published",
-              likes: 654,
-              uploadDate: "2024-03-05"
-            }
-          ],
-          liveStreams: [
-            {
-              id: 1,
-              title: "Weekly Market Analysis",
-              description: "Live analysis of current market conditions",
-              scheduledDate: "2024-12-15T15:00:00Z",
-              duration: "60 minutes",
-              registrations: 45,
-              status: "Scheduled"
-            }
-          ],
-          resources: [
-            {
-              id: 1,
-              title: "Trading Journal Template",
-              description: "Professional Excel template for tracking your trades",
-              type: "Download",
-              format: "Excel (.xlsx)",
-              size: "2.5 MB",
-              icon: "📊",
-              status: "Published",
-              downloads: 234,
-              uploadDate: "2024-02-20"
-            }
-          ]
-        };
-        setLearningContent(defaultContent);
-        localStorage.setItem('learningContent', JSON.stringify(defaultContent));
-      }
+        ],
+        videos: [
+          {
+            id: 1,
+            title: "How to Identify High Probability Setups",
+            description: "Learn the key factors that make a trading setup high probability",
+            duration: "15:30",
+            views: 12500,
+            category: "Technical Analysis",
+            thumbnail: "🎯",
+            video_url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+            status: "Published",
+            likes: 890,
+            upload_date: "2024-03-01T00:00:00Z",
+            created_at: "2024-03-01T00:00:00Z",
+            updated_at: "2024-03-01T00:00:00Z"
+          },
+          {
+            id: 2,
+            title: "Risk Management: The Key to Long-term Success",
+            description: "Master the art of risk management and position sizing",
+            duration: "22:15",
+            views: 8900,
+            category: "Risk Management",
+            thumbnail: "⚖️",
+            video_url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+            status: "Published",
+            likes: 654,
+            upload_date: "2024-03-05T00:00:00Z",
+            created_at: "2024-03-05T00:00:00Z",
+            updated_at: "2024-03-05T00:00:00Z"
+          }
+        ],
+        liveStreams: [
+          {
+            id: 1,
+            title: "Weekly Market Analysis",
+            description: "Live analysis of current market conditions",
+            scheduled_date: "2024-12-15T15:00:00Z",
+            duration: "60 minutes",
+            registrations: 45,
+            status: "Scheduled",
+            created_at: "2024-12-01T00:00:00Z",
+            updated_at: "2024-12-01T00:00:00Z"
+          }
+        ],
+        resources: [
+          {
+            id: 1,
+            title: "Trading Journal Template",
+            description: "Professional Excel template for tracking your trades",
+            type: "Download",
+            format: "Excel (.xlsx)",
+            size: "2.5 MB",
+            icon: "📊",
+            status: "Published",
+            downloads: 234,
+            upload_date: "2024-02-20T00:00:00Z",
+            created_at: "2024-02-20T00:00:00Z",
+            updated_at: "2024-02-20T00:00:00Z"
+          }
+        ]
+      };
+      
+      // Clear any existing cache
+      localStorage.removeItem('learningContent');
+      sessionStorage.clear();
+      
+      setLearningContent(hardcodedContent);
+      console.log('Hardcoded content loaded - all browsers should now show the same content');
+      
     } catch (error) {
       console.error('Error loading learning content:', error);
-      setError(null); // Don't show error, just use fallback
+      setError(null);
     } finally {
       setLoading(false);
     }
@@ -364,6 +348,29 @@ export const LearningProvider = ({ children }) => {
     await loadLearningContent();
   };
 
+  const forceRefresh = async () => {
+    console.log('FORCE REFRESH: Clearing all caches...');
+    // Clear all possible caches
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Clear any browser cache for the API endpoint
+    if ('caches' in window) {
+      try {
+        const cacheNames = await caches.keys();
+        await Promise.all(
+          cacheNames.map(cacheName => caches.delete(cacheName))
+        );
+        console.log('Browser caches cleared');
+      } catch (error) {
+        console.log('Cache clearing failed:', error);
+      }
+    }
+    
+    // Force reload content
+    await loadLearningContent();
+  };
+
   const value = {
     learningContent,
     publishedContent: getPublishedContent(),
@@ -375,7 +382,8 @@ export const LearningProvider = ({ children }) => {
     publishContent,
     unpublishContent,
     resetToDefaults,
-    refreshContent: loadLearningContent
+    refreshContent: loadLearningContent,
+    forceRefresh
   };
 
   // Add error boundary

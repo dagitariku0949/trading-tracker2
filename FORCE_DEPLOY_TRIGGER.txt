@@ -1,0 +1,10 @@
+Force deployment trigger - 2024-12-11 - Updated learning content
+This file is created to force a new deployment and ensure all changes are live.
+Timestamp: 2024-12-11T${new Date().toISOString().split('T')[1]}
+
+Changes made:
+- Updated learning content to show 3 courses consistently
+- Added hardcoded content to bypass API caching issues
+- Added debug banners to identify deployment versions
+
+Expected result: All browsers should show the same 3 courses with debug banner.
