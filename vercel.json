@@ -37,6 +37,10 @@
       "destination": "/admin-panel.html"
     },
     {
+      "source": "/api-test",
+      "destination": "/api-test.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
