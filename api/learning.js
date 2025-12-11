@@ -119,7 +119,16 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN || 'ghp_dummy_token'
 const GITHUB_REPO = 'dagitariku0949/trading-tracker2'
 const DATA_FILE = 'learning-content.json'
 
+// In-memory storage for current session (will reset on server restart)
+let currentContent = null
+
 async function getContent() {
+  // If we have in-memory content, use it (this allows admin changes to persist)
+  if (currentContent) {
+    console.log('Using in-memory content (with admin changes)')
+    return { ...currentContent }
+  }
+
   try {
     // Try to fetch from GitHub
     const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${DATA_FILE}`, {
@@ -133,18 +142,25 @@ async function getContent() {
       const data = await response.json()
       const content = JSON.parse(Buffer.from(data.content, 'base64').toString())
       console.log('Content loaded from GitHub')
+      currentContent = content // Store in memory
       return content
     }
   } catch (error) {
     console.log('GitHub fetch failed:', error.message)
   }
   
-  // Fallback to default content (now includes all 3 courses)
-  console.log('Using updated default content with 3 courses')
-  return { ...defaultContent }
+  // Fallback to default content and store in memory
+  console.log('Using default content with 3 courses')
+  currentContent = { ...defaultContent }
+  return currentContent
 }
 
 async function saveContent(content) {
+  // Save to in-memory storage (immediate effect)
+  currentContent = { ...content }
+  console.log('Content saved to in-memory storage')
+  
+  // Also try to save to GitHub (but don't fail if it doesn't work)
   try {
     // Get current file to get SHA
     let sha = null
@@ -184,16 +200,15 @@ async function saveContent(content) {
     })
     
     if (response.ok) {
-      console.log('Content saved to GitHub')
-      return true
+      console.log('Content also saved to GitHub')
     } else {
-      console.log('GitHub save failed:', response.status)
-      return false
+      console.log('GitHub save failed, but in-memory save succeeded')
     }
   } catch (error) {
-    console.log('Save error:', error.message)
-    return false
+    console.log('GitHub save error, but in-memory save succeeded:', error.message)
   }
+  
+  return true // Always return true since in-memory save always works
 }
 
 export default async function handler(req, res) {
