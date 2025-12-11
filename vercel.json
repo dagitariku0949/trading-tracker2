@@ -41,6 +41,10 @@
       "destination": "/api-test.html"
     },
     {
+      "source": "/learning-test",
+      "destination": "/learning-test.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
