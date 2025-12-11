@@ -120,13 +120,6 @@ const GITHUB_REPO = 'dagitariku0949/trading-tracker2'
 const DATA_FILE = 'learning-content.json'
 
 async function getContent() {
-  // For now, always use the updated default content to ensure consistency
-  // This ensures all users see the same content regardless of GitHub state
-  console.log('Using updated default content')
-  return { ...defaultContent }
-  
-  // TODO: Re-enable GitHub storage once content is stable
-  /*
   try {
     // Try to fetch from GitHub
     const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${DATA_FILE}`, {
@@ -146,20 +139,12 @@ async function getContent() {
     console.log('GitHub fetch failed:', error.message)
   }
   
-  // Fallback to default content
-  console.log('Using default content')
+  // Fallback to default content (now includes all 3 courses)
+  console.log('Using updated default content with 3 courses')
   return { ...defaultContent }
-  */
 }
 
 async function saveContent(content) {
-  // Temporarily disabled GitHub saving to ensure consistency
-  // All content changes will use the default content for now
-  console.log('GitHub saving temporarily disabled')
-  return true
-  
-  // TODO: Re-enable GitHub storage once content management is stable
-  /*
   try {
     // Get current file to get SHA
     let sha = null
@@ -209,7 +194,6 @@ async function saveContent(content) {
     console.log('Save error:', error.message)
     return false
   }
-  */
 }
 
 export default async function handler(req, res) {
