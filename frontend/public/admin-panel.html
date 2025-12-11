@@ -154,10 +154,14 @@
 
             const loadData = async () => {
                 try {
-                    // Load learning content
-                    const learningResponse = await axios.get('/api/learning');
+                    // Load learning content with cache busting
+                    const cacheBuster = `?v=${Date.now()}&force=true`;
+                    const learningResponse = await axios.get(`/api/learning${cacheBuster}`);
                     if (learningResponse.data.success) {
                         setLearningContent(learningResponse.data.data);
+                        console.log('Loaded learning content:', learningResponse.data.data);
+                    } else {
+                        throw new Error('API response not successful');
                     }
 
                     // Load users (mock data for now)
@@ -166,7 +170,42 @@
                         { id: 2, name: 'Jane Smith', email: 'jane@example.com', createdAt: '2024-02-20', lastLogin: '2024-12-09' }
                     ]);
                 } catch (error) {
-                    console.error('Failed to load data:', error);
+                    console.error('Failed to load data from API:', error);
+                    // Use fallback data if API fails
+                    setLearningContent({
+                        courses: [
+                            {
+                                id: 1,
+                                title: "Complete Forex Trading Mastery",
+                                description: "Master the fundamentals of forex trading",
+                                status: "Published",
+                                students: 156,
+                                lessons: 24,
+                                duration: "12 hours"
+                            },
+                            {
+                                id: 2,
+                                title: "Advanced Price Action Strategies",
+                                description: "Learn professional price action techniques",
+                                status: "Published",
+                                students: 89,
+                                lessons: 16,
+                                duration: "8 hours"
+                            },
+                            {
+                                id: 3,
+                                title: "Trading Psychology Mastery",
+                                description: "Develop mental discipline for trading",
+                                status: "Published",
+                                students: 67,
+                                lessons: 12,
+                                duration: "6 hours"
+                            }
+                        ],
+                        videos: [],
+                        liveStreams: [],
+                        resources: []
+                    });
                 }
             };
 
@@ -209,15 +248,22 @@
             const toggleCourseStatus = async (courseId, currentStatus) => {
                 const newStatus = currentStatus === 'Published' ? 'Draft' : 'Published';
                 try {
-                    await axios.put('/api/learning', {
+                    console.log(`Updating course ${courseId} status to ${newStatus}`);
+                    const response = await axios.put('/api/learning', {
                         type: 'course',
                         id: courseId,
                         updates: { status: newStatus }
                     });
-                    await loadData();
-                    alert(`Course ${newStatus.toLowerCase()} successfully!`);
+                    
+                    if (response.data.success) {
+                        await loadData(); // Reload data from API
+                        alert(`Course ${newStatus.toLowerCase()} successfully! Changes will appear on main website within 30 seconds.`);
+                        console.log('Course status updated successfully');
+                    } else {
+                        throw new Error('API update failed');
+                    }
                 } catch (error) {
-                    console.error('Failed to update course:', error);
+                    console.error('Failed to update course via API:', error);
                     // Update local state as fallback
                     setLearningContent(prev => ({
                         ...prev,
@@ -227,25 +273,32 @@
                                 : course
                         )
                     }));
-                    alert(`Course ${newStatus.toLowerCase()} successfully!`);
+                    alert(`Course ${newStatus.toLowerCase()} locally. Note: Changes may not sync to main website.`);
                 }
             };
 
             const deleteCourse = async (courseId) => {
-                if (!confirm('Are you sure you want to delete this course?')) return;
+                if (!confirm('Are you sure you want to delete this course? This action cannot be undone.')) return;
                 
                 try {
-                    await axios.delete(`/api/learning?type=course&id=${courseId}`);
-                    await loadData();
-                    alert('Course deleted successfully!');
+                    console.log(`Deleting course ${courseId}`);
+                    const response = await axios.delete(`/api/learning?type=course&id=${courseId}`);
+                    
+                    if (response.data.success) {
+                        await loadData(); // Reload data from API
+                        alert('Course deleted successfully! Changes will appear on main website within 30 seconds.');
+                        console.log('Course deleted successfully');
+                    } else {
+                        throw new Error('API delete failed');
+                    }
                 } catch (error) {
-                    console.error('Failed to delete course:', error);
+                    console.error('Failed to delete course via API:', error);
                     // Update local state as fallback
                     setLearningContent(prev => ({
                         ...prev,
                         courses: prev.courses.filter(course => course.id !== courseId)
                     }));
-                    alert('Course deleted successfully!');
+                    alert('Course deleted locally. Note: Changes may not sync to main website.');
                 }
             };
 

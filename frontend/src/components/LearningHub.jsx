@@ -45,21 +45,13 @@ const LearningHub = ({ onBack }) => {
     );
   }
 
-  // Use raw content instead of filtered publishedContent
-  const learningContent = rawContent || {
+  // Use published content from context (respects admin changes)
+  const learningContent = publishedContent || {
     courses: [],
     videos: [],
     liveStreams: [],
     resources: []
   };
-  
-  // Force show all courses regardless of status
-  if (learningContent.courses) {
-    learningContent.courses = learningContent.courses.map(course => ({
-      ...course,
-      status: 'Published' // Force all courses to be published
-    }));
-  }
 
   const categories = [
     { id: 'courses', label: 'Courses', icon: '🎓' },
