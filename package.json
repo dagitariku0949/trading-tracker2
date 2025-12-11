@@ -1,0 +1,17 @@
+{
+  "name": "leap-trading-dashboard",
+  "version": "1.0.0",
+  "description": "Professional trading journal with advanced analytics",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "cd frontend && npm run build"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "keywords": ["trading", "dashboard", "analytics", "journal"],
+  "author": "LEAP Trading",
+  "license": "MIT"
+}
