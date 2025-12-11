@@ -1,6 +1,10 @@
 const express = require('express')
 const router = express.Router()
 const db = require('../db')
+const userAuth = require('../middleware/userAuth')
+
+// Apply user authentication to all trade routes
+router.use(userAuth)
 
 // Get all trades
 router.get('/', async (req, res) => {

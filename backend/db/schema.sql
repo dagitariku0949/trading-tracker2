@@ -1,6 +1,7 @@
 -- Trading Dashboard Schema
 CREATE TABLE IF NOT EXISTS trades (
   id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL DEFAULT 1, -- Associate trades with users
   trade_date TIMESTAMP DEFAULT NOW(),
   symbol VARCHAR(20) NOT NULL,
   direction VARCHAR(10) NOT NULL, -- 'LONG' or 'SHORT'

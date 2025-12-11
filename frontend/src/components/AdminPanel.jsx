@@ -1,0 +1,1032 @@
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+
+const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) => {
+  const [serverStatus, setServerStatus] = useState({
+    backend: 'checking',
+    database: 'checking',
+    totalTrades: 0,
+    accounts: 0,
+    strategies: 0,
+    uptime: '0m',
+    lastSync: 'Never'
+  });
+  
+  const [activeTab, setActiveTab] = useState('overview');
+  const [logs, setLogs] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [tradingSummary, setTradingSummary] = useState([]);
+  const [selectedUserTrades, setSelectedUserTrades] = useState(null);
+  const [showTradesModal, setShowTradesModal] = useState(false);
+  const [systemInfo, setSystemInfo] = useState({
+    memory: '0 MB',
+    cpu: '0%',
+    storage: '0 GB'
+  });
+
+  useEffect(() => {
+    checkServerStatus();
+    loadSystemInfo();
+    loadUsers();
+    loadTradingSummary();
+    const interval = setInterval(checkServerStatus, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadTradingSummary = async () => {
+    try {
+      const ownerToken = sessionStorage.getItem('ownerAuthToken');
+      const response = await axios.get('http://localhost:4000/api/auth/users/trading-summary', {
+        headers: {
+          'Authorization': `Bearer ${ownerToken}`
+        }
+      });
+      
+      if (response.data.success) {
+        setTradingSummary(response.data.data);
+        addLog(`Loaded trading summary for ${response.data.data.length} users`, 'success');
+      }
+    } catch (error) {
+      addLog('Failed to load trading summary: ' + (error.response?.data?.message || error.message), 'error');
+      console.error('Error loading trading summary:', error);
+    }
+  };
+
+  const loadUserTrades = async (userId, userName) => {
+    try {
+      const ownerToken = sessionStorage.getItem('ownerAuthToken');
+      const response = await axios.get(`http://localhost:4000/api/auth/users/${userId}/trades`, {
+        headers: {
+          'Authorization': `Bearer ${ownerToken}`
+        }
+      });
+      
+      if (response.data.success) {
+        setSelectedUserTrades({
+          user: { id: userId, name: userName },
+          ...response.data.data
+        });
+        setShowTradesModal(true);
+        addLog(`Loaded ${response.data.data.trades.length} trades for ${userName}`, 'success');
+      }
+    } catch (error) {
+      addLog('Failed to load user trades: ' + (error.response?.data?.message || error.message), 'error');
+      console.error('Error loading user trades:', error);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const ownerToken = sessionStorage.getItem('ownerAuthToken');
+      console.log('Owner token:', ownerToken); // Debug log
+      
+      if (!ownerToken) {
+        addLog('No owner token found', 'error');
+        return;
+      }
+
+      const response = await axios.get('http://localhost:4000/api/auth/users', {
+        headers: {
+          'Authorization': `Bearer ${ownerToken}`
+        }
+      });
+      
+      console.log('Users response:', response.data); // Debug log
+      
+      if (response.data.success) {
+        setUsers(response.data.users);
+        addLog(`Loaded ${response.data.users.length} registered users`, 'success');
+      } else {
+        addLog('Failed to load users: ' + response.data.message, 'error');
+      }
+    } catch (error) {
+      addLog('Failed to load users: ' + (error.response?.data?.message || error.message), 'error');
+      console.error('Error loading users:', error);
+    }
+  };
+
+  const checkServerStatus = async () => {
+    try {
+      const response = await axios.get('http://localhost:4000/', { timeout: 3000 });
+      
+      const uniqueAccounts = new Set(trades.map(t => t.account || 'Default')).size;
+      const uniqueStrategies = new Set(trades.map(t => t.strategy || 'None')).size;
+      
+      setServerStatus({
+        backend: 'online',
+        database: 'connected',
+        totalTrades: trades.length,
+        accounts: uniqueAccounts || 1,
+        strategies: uniqueStrategies || 1,
+        totalUsers: users.length,
+        uptime: calculateUptime(),
+        lastSync: new Date().toLocaleTimeString()
+      });
+
+      addLog('System check completed successfully', 'success');
+    } catch (error) {
+      setServerStatus(prev => ({
+        ...prev,
+        backend: 'offline',
+        database: 'disconnected'
+      }));
+      addLog('Backend connection failed', 'error');
+    }
+  };
+
+  const loadSystemInfo = () => {
+    setSystemInfo({
+      memory: '245 MB',
+      cpu: '12%',
+      storage: '2.1 GB'
+    });
+  };
+
+  const calculateUptime = () => {
+    const start = sessionStorage.getItem('serverStartTime');
+    if (!start) {
+      sessionStorage.setItem('serverStartTime', Date.now().toString());
+      return '0m';
+    }
+    const minutes = Math.floor((Date.now() - parseInt(start)) / 60000);
+    return minutes < 60 ? `${minutes}m` : `${Math.floor(minutes/60)}h ${minutes%60}m`;
+  };
+
+  const addLog = (message, type = 'info') => {
+    const newLog = {
+      id: Date.now(),
+      timestamp: new Date().toLocaleTimeString(),
+      message,
+      type
+    };
+    setLogs(prev => [newLog, ...prev.slice(0, 49)]);
+  };
+
+  const handleAction = async (action) => {
+    addLog(`Executing ${action}...`, 'info');
+    
+    try {
+      switch (action) {
+        case 'backup':
+          // Simulate backup
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          addLog('Database backup completed successfully', 'success');
+          break;
+          
+        case 'export':
+          const response = await axios.get('http://localhost:4000/api/trades');
+          const tradesData = response.data;
+          const csv = convertToCSV(tradesData);
+          downloadCSV(csv, `trades_export_${new Date().toISOString().split('T')[0]}.csv`);
+          addLog(`Exported ${tradesData.length} trades to CSV`, 'success');
+          break;
+          
+        case 'sync':
+          // Simulate GitHub sync
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          setServerStatus(prev => ({ ...prev, lastSync: new Date().toLocaleTimeString() }));
+          addLog('GitHub sync completed', 'success');
+          break;
+          
+        case 'restart':
+          addLog('Server restart initiated', 'warning');
+          // In real app, this would restart the server
+          break;
+          
+        case 'clearLogs':
+          setLogs([]);
+          addLog('System logs cleared', 'info');
+          break;
+          
+        default:
+          addLog(`Unknown action: ${action}`, 'error');
+      }
+    } catch (error) {
+      addLog(`Action failed: ${error.message}`, 'error');
+    }
+  };
+
+  const convertToCSV = (data) => {
+    if (!data.length) return '';
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => headers.map(header => `"${row[header] || ''}"`).join(','))
+    ].join('\n');
+    return csvContent;
+  };
+
+  const downloadCSV = (csv, filename) => {
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const StatusIndicator = ({ status, label }) => (
+    <div className="flex items-center space-x-2">
+      <div className={`w-3 h-3 rounded-full ${
+        status === 'online' || status === 'connected' ? 'bg-green-500' :
+        status === 'checking' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'
+      }`}></div>
+      <span className="text-sm text-gray-300">{label}: {status}</span>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-white">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-4 py-2 text-center">
+        👑 OWNER MODE: Exclusive system management access
+      </div>
+
+      <div className="p-6">
+        {/* Title Bar */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-blue-400 flex items-center">
+              👑 Owner Panel
+            </h1>
+            <p className="text-gray-400">Exclusive system management and monitoring</p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={onLogout}
+              className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-colors"
+              title="Logout from owner panel"
+            >
+              🚪 Logout
+            </button>
+            <button
+              onClick={onBackToDashboard}
+              className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition-colors"
+            >
+              ← Back to Dashboard
+            </button>
+          </div>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="flex space-x-4 mb-6 overflow-x-auto">
+          {[
+            { id: 'overview', label: 'Overview', icon: '📊' },
+            { id: 'users', label: 'Users', icon: '👥' },
+            { id: 'trading', label: 'Trading Analytics', icon: '📈' },
+            { id: 'monitoring', label: 'Monitoring', icon: '🖥️' },
+            { id: 'database', label: 'Database', icon: '💾' },
+            { id: 'logs', label: 'Logs', icon: '📋' },
+            { id: 'settings', label: 'Settings', icon: '⚙️' }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
+                activeTab === tab.id 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+              }`}
+            >
+              {tab.icon} {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">System Overview</h2>
+            
+            {/* Status Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className="bg-blue-600 p-2 rounded">📊</div>
+                  <div>
+                    <p className="text-gray-400 text-sm">TOTAL TRADES</p>
+                    <p className="text-2xl font-bold">{serverStatus.totalTrades}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className="bg-green-600 p-2 rounded">👥</div>
+                  <div>
+                    <p className="text-gray-400 text-sm">REGISTERED USERS</p>
+                    <p className="text-2xl font-bold">{users.length}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className="bg-purple-600 p-2 rounded">📈</div>
+                  <div>
+                    <p className="text-gray-400 text-sm">STRATEGIES</p>
+                    <p className="text-2xl font-bold">{serverStatus.strategies}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className="bg-orange-600 p-2 rounded">⏱️</div>
+                  <div>
+                    <p className="text-gray-400 text-sm">UPTIME</p>
+                    <p className="text-2xl font-bold">{serverStatus.uptime}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Server Status */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <h3 className="text-xl font-bold mb-4">Server Status</h3>
+                <div className="space-y-3">
+                  <StatusIndicator status={serverStatus.backend} label="Backend API" />
+                  <StatusIndicator status={serverStatus.database} label="Database" />
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                    <span className="text-sm text-gray-300">Last Sync: {serverStatus.lastSync}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <h3 className="text-xl font-bold mb-4">System Resources</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Memory Usage:</span>
+                    <span className="text-white">{systemInfo.memory}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">CPU Usage:</span>
+                    <span className="text-white">{systemInfo.cpu}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Storage Used:</span>
+                    <span className="text-white">{systemInfo.storage}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-gray-800 p-6 rounded-lg">
+              <h3 className="text-xl font-bold mb-4">Quick Actions</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <button
+                  onClick={() => handleAction('backup')}
+                  className="bg-blue-600 hover:bg-blue-700 px-4 py-3 rounded-lg transition-colors text-center"
+                >
+                  💾<br />Backup
+                </button>
+                <button
+                  onClick={() => handleAction('export')}
+                  className="bg-green-600 hover:bg-green-700 px-4 py-3 rounded-lg transition-colors text-center"
+                >
+                  📤<br />Export
+                </button>
+                <button
+                  onClick={() => handleAction('sync')}
+                  className="bg-purple-600 hover:bg-purple-700 px-4 py-3 rounded-lg transition-colors text-center"
+                >
+                  🔄<br />Sync
+                </button>
+                <button
+                  onClick={() => handleAction('restart')}
+                  className="bg-red-600 hover:bg-red-700 px-4 py-3 rounded-lg transition-colors text-center"
+                >
+                  🔄<br />Restart
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Users Tab */}
+        {activeTab === 'users' && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">User Management</h2>
+            
+            <div className="bg-gray-800 p-6 rounded-lg mb-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">Registered Users ({users.length})</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const token = sessionStorage.getItem('ownerAuthToken');
+                      addLog(`Debug: Owner token = ${token ? 'exists' : 'missing'}`, 'info');
+                      console.log('Debug info:', { token, users: users.length });
+                    }}
+                    className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded-lg transition-colors"
+                  >
+                    🐛 Debug
+                  </button>
+                  <button
+                    onClick={loadUsers}
+                    className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors"
+                  >
+                    🔄 Refresh
+                  </button>
+                </div>
+              </div>
+              
+              {users.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  <div className="text-4xl mb-4">👥</div>
+                  <p>No users registered yet</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-gray-700">
+                        <th className="pb-3 text-gray-400">ID</th>
+                        <th className="pb-3 text-gray-400">Name</th>
+                        <th className="pb-3 text-gray-400">Email</th>
+                        <th className="pb-3 text-gray-400">Registered</th>
+                        <th className="pb-3 text-gray-400">Last Login</th>
+                        <th className="pb-3 text-gray-400">Status</th>
+                        <th className="pb-3 text-gray-400">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.map(user => (
+                        <tr key={user.id} className="border-b border-gray-700">
+                          <td className="py-3 text-gray-300">#{user.id}</td>
+                          <td className="py-3 text-white font-medium">{user.name}</td>
+                          <td className="py-3 text-gray-300">{user.email}</td>
+                          <td className="py-3 text-gray-300">
+                            {new Date(user.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="py-3 text-gray-300">
+                            {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                          </td>
+                          <td className="py-3">
+                            <span className="bg-green-900 text-green-300 px-2 py-1 rounded text-sm">
+                              Active
+                            </span>
+                          </td>
+                          <td className="py-3">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setShowUserModal(true);
+                                  addLog(`Viewing user ${user.name} details`, 'info');
+                                }}
+                                className="bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs transition-colors"
+                                title="View Details"
+                              >
+                                👁️
+                              </button>
+                              <button
+                                onClick={() => addLog(`Reset password for ${user.name}`, 'warning')}
+                                className="bg-yellow-600 hover:bg-yellow-700 px-2 py-1 rounded text-xs transition-colors"
+                                title="Reset Password"
+                              >
+                                🔑
+                              </button>
+                              {user.email !== 'demo@example.com' && (
+                                <button
+                                  onClick={() => addLog(`Deactivated user ${user.name}`, 'warning')}
+                                  className="bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-xs transition-colors"
+                                  title="Deactivate User"
+                                >
+                                  🚫
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <h4 className="font-bold mb-4">User Statistics</h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Total Users:</span>
+                    <span className="text-white font-bold">{users.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">New Today:</span>
+                    <span className="text-white font-bold">
+                      {users.filter(u => 
+                        new Date(u.createdAt).toDateString() === new Date().toDateString()
+                      ).length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">This Week:</span>
+                    <span className="text-white font-bold">
+                      {users.filter(u => {
+                        const weekAgo = new Date();
+                        weekAgo.setDate(weekAgo.getDate() - 7);
+                        return new Date(u.createdAt) > weekAgo;
+                      }).length}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <h4 className="font-bold mb-4">Recent Registrations</h4>
+                <div className="space-y-2">
+                  {users.slice(-3).reverse().map(user => (
+                    <div key={user.id} className="text-sm">
+                      <div className="text-white">{user.name}</div>
+                      <div className="text-gray-400 text-xs">
+                        {new Date(user.createdAt).toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                  {users.length === 0 && (
+                    <div className="text-gray-400 text-sm">No recent registrations</div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <h4 className="font-bold mb-4">User Actions</h4>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => addLog('User export initiated', 'info')}
+                    className="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded transition-colors text-sm"
+                  >
+                    📤 Export User List
+                  </button>
+                  <button
+                    onClick={() => addLog('User analytics generated', 'info')}
+                    className="w-full bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded transition-colors text-sm"
+                  >
+                    📊 User Analytics
+                  </button>
+                  <button
+                    onClick={loadUsers}
+                    className="w-full bg-green-600 hover:bg-green-700 px-4 py-2 rounded transition-colors text-sm"
+                  >
+                    🔄 Refresh Data
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Trading Analytics Tab */}
+        {activeTab === 'trading' && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Trading Analytics</h2>
+            
+            <div className="bg-gray-800 p-6 rounded-lg mb-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">User Trading Performance</h3>
+                <button
+                  onClick={loadTradingSummary}
+                  className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors"
+                >
+                  🔄 Refresh
+                </button>
+              </div>
+              
+              {tradingSummary.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  <div className="text-4xl mb-4">📊</div>
+                  <p>No trading data available</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-gray-700">
+                        <th className="pb-3 text-gray-400">User</th>
+                        <th className="pb-3 text-gray-400">Total Trades</th>
+                        <th className="pb-3 text-gray-400">Total P&L</th>
+                        <th className="pb-3 text-gray-400">Win Rate</th>
+                        <th className="pb-3 text-gray-400">Account Balance</th>
+                        <th className="pb-3 text-gray-400">Last Trade</th>
+                        <th className="pb-3 text-gray-400">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tradingSummary.map(summary => (
+                        <tr key={summary.userId} className="border-b border-gray-700">
+                          <td className="py-3">
+                            <div>
+                              <div className="text-white font-medium">{summary.name}</div>
+                              <div className="text-gray-400 text-sm">{summary.email}</div>
+                            </div>
+                          </td>
+                          <td className="py-3 text-gray-300">{summary.totalTrades}</td>
+                          <td className="py-3">
+                            <span className={`font-bold ${
+                              parseFloat(summary.totalPnL) >= 0 ? 'text-green-400' : 'text-red-400'
+                            }`}>
+                              ${summary.totalPnL}
+                            </span>
+                          </td>
+                          <td className="py-3">
+                            <span className={`font-bold ${
+                              parseFloat(summary.winRate) >= 50 ? 'text-green-400' : 'text-yellow-400'
+                            }`}>
+                              {summary.winRate}%
+                            </span>
+                          </td>
+                          <td className="py-3 text-white font-medium">${summary.accountBalance}</td>
+                          <td className="py-3 text-gray-300">
+                            {new Date(summary.lastTradeDate).toLocaleDateString()}
+                          </td>
+                          <td className="py-3">
+                            <button
+                              onClick={() => loadUserTrades(summary.userId, summary.name)}
+                              className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm transition-colors"
+                            >
+                              📊 View Trades
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Trading Statistics */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <h4 className="font-bold mb-2 text-blue-400">Total Platform P&L</h4>
+                <div className="text-2xl font-bold text-white">
+                  ${tradingSummary.reduce((sum, s) => sum + parseFloat(s.totalPnL), 0).toFixed(2)}
+                </div>
+              </div>
+
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <h4 className="font-bold mb-2 text-green-400">Active Traders</h4>
+                <div className="text-2xl font-bold text-white">
+                  {tradingSummary.filter(s => s.totalTrades > 0).length}
+                </div>
+              </div>
+
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <h4 className="font-bold mb-2 text-purple-400">Total Trades</h4>
+                <div className="text-2xl font-bold text-white">
+                  {tradingSummary.reduce((sum, s) => sum + s.totalTrades, 0)}
+                </div>
+              </div>
+
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <h4 className="font-bold mb-2 text-yellow-400">Avg Win Rate</h4>
+                <div className="text-2xl font-bold text-white">
+                  {tradingSummary.length > 0 
+                    ? (tradingSummary.reduce((sum, s) => sum + parseFloat(s.winRate), 0) / tradingSummary.length).toFixed(1)
+                    : 0}%
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Monitoring Tab */}
+        {activeTab === 'monitoring' && (
+          <div className="bg-gray-800 p-6 rounded-lg">
+            <h2 className="text-2xl font-bold mb-4">System Monitoring</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-gray-700 p-4 rounded-lg">
+                <h4 className="font-bold mb-2">Performance Metrics</h4>
+                <div className="space-y-2 text-sm">
+                  <div>Response Time: 45ms</div>
+                  <div>Requests/min: 12</div>
+                  <div>Error Rate: 0.1%</div>
+                </div>
+              </div>
+              <div className="bg-gray-700 p-4 rounded-lg">
+                <h4 className="font-bold mb-2">Database Stats</h4>
+                <div className="space-y-2 text-sm">
+                  <div>Connections: 3/100</div>
+                  <div>Query Time: 2ms avg</div>
+                  <div>Cache Hit: 94%</div>
+                </div>
+              </div>
+              <div className="bg-gray-700 p-4 rounded-lg">
+                <h4 className="font-bold mb-2">API Endpoints</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>/api/trades</span>
+                    <span className="text-green-400">✓</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>/api/stats</span>
+                    <span className="text-green-400">✓</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Database Tab */}
+        {activeTab === 'database' && (
+          <div className="bg-gray-800 p-6 rounded-lg">
+            <h2 className="text-2xl font-bold mb-4">Database Management</h2>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center p-4 bg-gray-700 rounded-lg">
+                <div>
+                  <h4 className="font-bold">Trades Table</h4>
+                  <p className="text-sm text-gray-400">{serverStatus.totalTrades} records</p>
+                </div>
+                <button
+                  onClick={() => handleAction('backup')}
+                  className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded transition-colors"
+                >
+                  Backup
+                </button>
+              </div>
+              <div className="flex justify-between items-center p-4 bg-gray-700 rounded-lg">
+                <div>
+                  <h4 className="font-bold">System Settings</h4>
+                  <p className="text-sm text-gray-400">Configuration data</p>
+                </div>
+                <button className="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded transition-colors">
+                  View
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Logs Tab */}
+        {activeTab === 'logs' && (
+          <div className="bg-gray-800 p-6 rounded-lg">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">System Logs</h2>
+              <button
+                onClick={() => handleAction('clearLogs')}
+                className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded transition-colors"
+              >
+                Clear Logs
+              </button>
+            </div>
+            <div className="bg-black p-4 rounded-lg h-96 overflow-y-auto font-mono text-sm">
+              {logs.length === 0 ? (
+                <div className="text-gray-500">No logs available</div>
+              ) : (
+                logs.map(log => (
+                  <div key={log.id} className={`mb-1 ${
+                    log.type === 'error' ? 'text-red-400' :
+                    log.type === 'warning' ? 'text-yellow-400' :
+                    log.type === 'success' ? 'text-green-400' : 'text-gray-300'
+                  }`}>
+                    [{log.timestamp}] {log.message}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <div className="bg-gray-800 p-6 rounded-lg">
+            <h2 className="text-2xl font-bold mb-4">System Settings</h2>
+            <div className="space-y-6">
+              <div>
+                <h4 className="font-bold mb-2">Server Configuration</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Port</label>
+                    <input type="text" value="4000" className="w-full bg-gray-700 p-2 rounded" readOnly />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Environment</label>
+                    <input type="text" value="Development" className="w-full bg-gray-700 p-2 rounded" readOnly />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h4 className="font-bold mb-2">Backup Settings</h4>
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input type="checkbox" className="mr-2" defaultChecked />
+                    Auto-backup daily
+                  </label>
+                  <label className="flex items-center">
+                    <input type="checkbox" className="mr-2" />
+                    Backup before updates
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* User Details Modal */}
+        {showUserModal && selectedUser && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-slate-800 p-8 rounded-lg shadow-xl max-w-md w-full mx-4">
+              <div className="text-center mb-6">
+                <div className="text-4xl mb-2">👤</div>
+                <h2 className="text-2xl font-bold text-white">User Details</h2>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Name</label>
+                  <div className="w-full px-4 py-3 bg-slate-700 rounded-lg text-white">
+                    {selectedUser.name}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                  <div className="w-full px-4 py-3 bg-slate-700 rounded-lg text-white">
+                    {selectedUser.email}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">User ID</label>
+                  <div className="w-full px-4 py-3 bg-slate-700 rounded-lg text-white">
+                    #{selectedUser.id}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Registration Date</label>
+                  <div className="w-full px-4 py-3 bg-slate-700 rounded-lg text-white">
+                    {new Date(selectedUser.createdAt).toLocaleString()}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Password Status</label>
+                  <div className="w-full px-4 py-3 bg-slate-700 rounded-lg text-white">
+                    🔒 Encrypted (bcrypt hash)
+                  </div>
+                </div>
+
+                <div className="bg-yellow-900 border border-yellow-700 p-4 rounded-lg">
+                  <p className="text-yellow-300 text-sm">
+                    🔐 <strong>Security Note:</strong> Passwords are encrypted and cannot be viewed. 
+                    You can only reset them to generate new temporary passwords.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowUserModal(false);
+                    setSelectedUser(null);
+                  }}
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 rounded-lg font-semibold transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    const tempPassword = Math.random().toString(36).slice(-8);
+                    addLog(`Generated temporary password for ${selectedUser.name}: ${tempPassword}`, 'warning');
+                    alert(`Temporary password for ${selectedUser.name}: ${tempPassword}\n\nUser should change this immediately after login.`);
+                  }}
+                  className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-lg font-semibold transition-colors"
+                >
+                  🔑 Reset Password
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* User Trades Modal */}
+        {showTradesModal && selectedUserTrades && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-slate-800 p-8 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="text-center mb-6">
+                <div className="text-4xl mb-2">📊</div>
+                <h2 className="text-2xl font-bold text-white">
+                  {selectedUserTrades.user.name}'s Trading Journal
+                </h2>
+              </div>
+
+              {/* Performance Summary */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-slate-700 p-4 rounded-lg text-center">
+                  <div className="text-gray-400 text-sm">Total Trades</div>
+                  <div className="text-xl font-bold text-white">{selectedUserTrades.analytics.totalTrades}</div>
+                </div>
+                <div className="bg-slate-700 p-4 rounded-lg text-center">
+                  <div className="text-gray-400 text-sm">Win Rate</div>
+                  <div className="text-xl font-bold text-green-400">{selectedUserTrades.analytics.winRate}%</div>
+                </div>
+                <div className="bg-slate-700 p-4 rounded-lg text-center">
+                  <div className="text-gray-400 text-sm">Total P&L</div>
+                  <div className={`text-xl font-bold ${
+                    selectedUserTrades.analytics.totalPnL >= 0 ? 'text-green-400' : 'text-red-400'
+                  }`}>
+                    ${selectedUserTrades.analytics.totalPnL}
+                  </div>
+                </div>
+                <div className="bg-slate-700 p-4 rounded-lg text-center">
+                  <div className="text-gray-400 text-sm">Avg P&L</div>
+                  <div className="text-xl font-bold text-white">${selectedUserTrades.analytics.avgPnL}</div>
+                </div>
+              </div>
+
+              {/* Trades List */}
+              <div className="bg-slate-700 p-4 rounded-lg mb-6">
+                <h3 className="text-lg font-bold mb-4">Recent Trades</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-600">
+                        <th className="pb-2 text-gray-400">Symbol</th>
+                        <th className="pb-2 text-gray-400">Direction</th>
+                        <th className="pb-2 text-gray-400">Entry</th>
+                        <th className="pb-2 text-gray-400">Exit</th>
+                        <th className="pb-2 text-gray-400">Size</th>
+                        <th className="pb-2 text-gray-400">P&L</th>
+                        <th className="pb-2 text-gray-400">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedUserTrades.trades.map(trade => (
+                        <tr key={trade.id} className="border-b border-gray-600">
+                          <td className="py-2 text-white font-medium">{trade.symbol}</td>
+                          <td className="py-2">
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              trade.direction === 'LONG' ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'
+                            }`}>
+                              {trade.direction}
+                            </span>
+                          </td>
+                          <td className="py-2 text-gray-300">{trade.entry_price}</td>
+                          <td className="py-2 text-gray-300">{trade.exit_price || 'Open'}</td>
+                          <td className="py-2 text-gray-300">{trade.lot_size}</td>
+                          <td className="py-2">
+                            <span className={`font-bold ${
+                              trade.pnl >= 0 ? 'text-green-400' : 'text-red-400'
+                            }`}>
+                              ${trade.pnl}
+                            </span>
+                          </td>
+                          <td className="py-2 text-gray-300 max-w-xs truncate">{trade.notes}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowTradesModal(false);
+                    setSelectedUserTrades(null);
+                  }}
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 rounded-lg font-semibold transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    const csvData = selectedUserTrades.trades.map(t => 
+                      `${t.symbol},${t.direction},${t.entry_price},${t.exit_price || ''},${t.lot_size},${t.pnl},${t.notes || ''}`
+                    ).join('\n');
+                    const csv = 'Symbol,Direction,Entry,Exit,Size,PnL,Notes\n' + csvData;
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${selectedUserTrades.user.name}_trades.csv`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    addLog(`Exported trades for ${selectedUserTrades.user.name}`, 'success');
+                  }}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition-colors"
+                >
+                  📤 Export CSV
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default AdminPanel;

@@ -15,9 +15,17 @@ import TradeJournal from './components/TradeJournal'
 import AfterTradeForm from './components/AfterTradeForm'
 import LandingPage from './components/LandingPage'
 import PositionCalculator from './components/PositionCalculator'
+import AdminPanel from './components/AdminPanel'
+import AdminLogin from './components/AdminLogin'
+import UserLogin from './components/UserLogin'
 
 export default function App(){
+  const [isUserAuthenticated, setIsUserAuthenticated] = useState(false)
+  const [currentUser, setCurrentUser] = useState(null)
   const [showLanding, setShowLanding] = useState(true)
+  const [showAdmin, setShowAdmin] = useState(false)
+  const [showAdminLogin, setShowAdminLogin] = useState(false)
+  const [isOwnerAuthenticated, setIsOwnerAuthenticated] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
   const [showImport, setShowImport] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -64,21 +72,115 @@ export default function App(){
   }
 
   useEffect(() => {
-    // Load starting balance from localStorage first
-    const savedBalance = localStorage.getItem('startingBalance')
-    if (savedBalance) {
-      setStartingBalance(parseFloat(savedBalance))
-    }
-    
-    // Request notification permission
-    const initNotifications = async () => {
-      const { requestNotificationPermission } = await import('./utils/notifications')
-      await requestNotificationPermission()
-    }
-    initNotifications()
-    
-    fetchData()
+    // Check if user is already authenticated
+    checkUserAuthentication()
   }, [])
+
+  useEffect(() => {
+    // Only load data if user is authenticated
+    if (isUserAuthenticated) {
+      // Load starting balance from localStorage first
+      const savedBalance = localStorage.getItem('startingBalance')
+      if (savedBalance) {
+        setStartingBalance(parseFloat(savedBalance))
+      }
+      
+      // Check if owner is already authenticated
+      checkOwnerAuthentication()
+      
+      // Request notification permission
+      const initNotifications = async () => {
+        const { requestNotificationPermission } = await import('./utils/notifications')
+        await requestNotificationPermission()
+      }
+      initNotifications()
+      
+      fetchData()
+    }
+  }, [isUserAuthenticated])
+
+  const checkUserAuthentication = async () => {
+    const token = localStorage.getItem('userToken')
+    const userData = localStorage.getItem('userData')
+    
+    if (token && userData) {
+      try {
+        // Verify token with backend
+        const response = await fetch('http://localhost:4000/api/auth/verify', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          setCurrentUser(data.user)
+          setIsUserAuthenticated(true)
+        } else {
+          // Token invalid, clear storage
+          localStorage.removeItem('userToken')
+          localStorage.removeItem('userData')
+        }
+      } catch (error) {
+        console.error('Auth verification failed:', error)
+        localStorage.removeItem('userToken')
+        localStorage.removeItem('userData')
+      }
+    }
+    setLoading(false)
+  }
+
+  const handleUserLogin = (user) => {
+    setCurrentUser(user)
+    setIsUserAuthenticated(true)
+  }
+
+  const handleUserLogout = () => {
+    localStorage.removeItem('userToken')
+    localStorage.removeItem('userData')
+    setCurrentUser(null)
+    setIsUserAuthenticated(false)
+    setShowAdmin(false)
+    setIsOwnerAuthenticated(false)
+  }
+
+  const checkOwnerAuthentication = () => {
+    const authToken = sessionStorage.getItem('ownerAuthToken')
+    const authTime = sessionStorage.getItem('ownerAuthTime')
+    
+    if (authToken && authTime) {
+      const timeDiff = Date.now() - parseInt(authTime)
+      // Session expires after 2 hours
+      if (timeDiff < 2 * 60 * 60 * 1000) {
+        setIsOwnerAuthenticated(true)
+      } else {
+        // Clear expired session
+        sessionStorage.removeItem('ownerAuthToken')
+        sessionStorage.removeItem('ownerAuthTime')
+      }
+    }
+  }
+
+  const handleOwnerLogin = () => {
+    setIsOwnerAuthenticated(true)
+    setShowAdminLogin(false)
+    setShowAdmin(true)
+  }
+
+  const handleAdminAccess = () => {
+    if (isOwnerAuthenticated) {
+      setShowAdmin(true)
+    } else {
+      setShowAdminLogin(true)
+    }
+  }
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('ownerAuthToken')
+    sessionStorage.removeItem('ownerAuthTime')
+    setIsOwnerAuthenticated(false)
+    setShowAdmin(false)
+  }
 
   useEffect(() => {
     // Restore reminders when trades are loaded
@@ -183,6 +285,11 @@ export default function App(){
     }
   }
 
+  // Show user login if not authenticated
+  if (!isUserAuthenticated) {
+    return <UserLogin onLogin={handleUserLogin} />
+  }
+
   if (showLanding) {
     return <LandingPage 
       onEnter={() => setShowLanding(false)}
@@ -190,6 +297,22 @@ export default function App(){
         setActiveTab(tab)
         setShowLanding(false)
       }}
+    />
+  }
+
+  if (showAdminLogin) {
+    return <AdminLogin 
+      onLogin={handleOwnerLogin}
+      onCancel={() => setShowAdminLogin(false)}
+    />
+  }
+
+  if (showAdmin && isOwnerAuthenticated) {
+    return <AdminPanel 
+      onBackToDashboard={() => setShowAdmin(false)}
+      onLogout={handleLogout}
+      trades={trades}
+      metrics={metrics}
     />
   }
 
@@ -215,8 +338,34 @@ export default function App(){
             </button>
             <div className="h-6 w-px bg-slate-700"></div>
             <h1 className="text-2xl font-semibold text-slate-300">Trading Dashboard</h1>
+            {currentUser && (
+              <>
+                <div className="h-6 w-px bg-slate-700"></div>
+                <div className="text-sm text-slate-400">
+                  Welcome, {currentUser.name}
+                </div>
+              </>
+            )}
           </div>
           <div className="flex gap-3">
+            <button
+              onClick={handleUserLogout}
+              className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-semibold transition"
+              title="Logout"
+            >
+              🚪 Logout
+            </button>
+            {/* Owner-only Admin Button */}
+            <button
+              onClick={handleAdminAccess}
+              className="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg font-semibold transition relative"
+              title="Owner Admin Panel"
+            >
+              🔧 {isOwnerAuthenticated ? 'Admin' : 'Owner'}
+              {isOwnerAuthenticated && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full"></div>
+              )}
+            </button>
             <button
               onClick={() => setShowSettings(true)}
               className="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg font-semibold transition"
