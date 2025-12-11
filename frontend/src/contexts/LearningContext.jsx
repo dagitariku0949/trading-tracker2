@@ -10,129 +10,67 @@ export const useLearning = () => {
   return context;
 };
 
-export const LearningProvider = ({ children }) => {
-  // Load initial state from localStorage or use default
-  const [learningContent, setLearningContent] = useState(() => {
-    try {
-      const saved = localStorage.getItem('learningContent');
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch (error) {
-      console.error('Error loading saved learning content:', error);
-    }
-    
-    // Default content if nothing saved
-    return {
-    courses: [
-      {
-        id: 1,
-        title: "Complete Forex Trading Mastery",
-        description: "Master the fundamentals of forex trading from beginner to advanced level",
-        duration: "12 hours",
-        lessons: 24,
-        level: "Beginner to Advanced",
-        price: "Free",
-        thumbnail: "🎓",
-        topics: ["Market Analysis", "Risk Management", "Trading Psychology", "Technical Analysis"],
-        status: "Published",
-        students: 156,
-        createdAt: "2024-01-15"
-      },
-      {
-        id: 2,
-        title: "Advanced Price Action Strategies",
-        description: "Learn professional price action techniques used by institutional traders",
-        duration: "8 hours",
-        lessons: 16,
-        level: "Intermediate",
-        price: "$99",
-        thumbnail: "📊",
-        topics: ["Support & Resistance", "Candlestick Patterns", "Market Structure", "Entry Strategies"],
-        status: "Published",
-        students: 89,
-        createdAt: "2024-02-10"
-      },
-      {
-        id: 3,
-        title: "Trading Psychology Mastery",
-        description: "Develop the mental discipline required for consistent trading success",
-        duration: "6 hours",
-        lessons: 12,
-        level: "All Levels",
-        price: "$79",
-        thumbnail: "🧠",
-        topics: ["Emotional Control", "Discipline", "Risk Psychology", "Mindset Development"],
-        status: "Published",
-        students: 67,
-        createdAt: "2024-03-01"
-      }
-    ],
-    videos: [
-      {
-        id: 1,
-        title: "How to Identify High Probability Setups",
-        description: "Learn the key factors that make a trading setup high probability",
-        duration: "15:30",
-        views: "12.5K",
-        category: "Technical Analysis",
-        thumbnail: "🎯",
-        videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-        status: "Published",
-        likes: 890,
-        uploadDate: "2024-03-01"
-      },
-      {
-        id: 2,
-        title: "Risk Management: The Key to Long-term Success",
-        description: "Master the art of risk management and position sizing",
-        duration: "22:15",
-        views: "8.9K",
-        category: "Risk Management",
-        thumbnail: "⚖️",
-        videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-        status: "Published",
-        likes: 654,
-        uploadDate: "2024-03-05"
-      }
-    ],
-    liveStreams: [
-      {
-        id: 1,
-        title: "Weekly Market Analysis",
-        description: "Live analysis of current market conditions",
-        scheduledDate: "2024-12-15T15:00:00Z",
-        duration: "60 minutes",
-        registrations: 45,
-        status: "Scheduled"
-      }
-    ],
-    resources: [
-      {
-        id: 1,
-        title: "Trading Journal Template",
-        description: "Professional Excel template for tracking your trades",
-        type: "Download",
-        format: "Excel (.xlsx)",
-        size: "2.5 MB",
-        icon: "📊",
-        status: "Published",
-        downloads: 234,
-        uploadDate: "2024-02-20"
-      }
-    ]
-    };
-  });
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://leap-trading-dashboard.vercel.app';
 
-  // Save to localStorage whenever content changes
+export const LearningProvider = ({ children }) => {
+  const [learningContent, setLearningContent] = useState({
+    courses: [],
+    videos: [],
+    liveStreams: [],
+    resources: []
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Load content from API on mount
   useEffect(() => {
+    loadLearningContent();
+  }, []);
+
+  const loadLearningContent = async () => {
     try {
-      localStorage.setItem('learningContent', JSON.stringify(learningContent));
-      console.log('Learning content saved to localStorage');
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch(`${API_BASE_URL}/api/learning`);
+      const result = await response.json();
+      
+      if (result.success) {
+        setLearningContent(result.data);
+        console.log('Learning content loaded from API');
+      } else {
+        throw new Error(result.message || 'Failed to load learning content');
+      }
     } catch (error) {
-      console.error('Error saving learning content:', error);
+      console.error('Error loading learning content:', error);
+      setError(error.message);
+      
+      // Fallback to default content if API fails
+      setLearningContent({
+        courses: [
+          {
+            id: 1,
+            title: "Complete Forex Trading Mastery",
+            description: "Master the fundamentals of forex trading from beginner to advanced level",
+            duration: "12 hours",
+            lessons: 24,
+            level: "Beginner to Advanced",
+            price: "Free",
+            thumbnail: "🎓",
+            topics: ["Market Analysis", "Risk Management", "Trading Psychology", "Technical Analysis"],
+            status: "Published",
+            students: 156,
+            createdAt: "2024-01-15"
+          }
+        ],
+        videos: [],
+        liveStreams: [],
+        resources: []
+      });
+    } finally {
+      setLoading(false);
     }
-  }, [learningContent]);
+  };
 
   // Get only published content for public display
   const getPublishedContent = () => {
@@ -147,82 +85,136 @@ export const LearningProvider = ({ children }) => {
   };
 
   // Admin functions for managing content
-  const addContent = (type, content) => {
-    const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
-    const newContent = {
-      ...content,
-      id: Date.now(),
-      status: 'Draft',
-      createdAt: new Date().toISOString(),
-      students: type === 'course' ? 0 : undefined,
-      views: type === 'video' ? 0 : undefined,
-      likes: type === 'video' ? 0 : undefined,
-      downloads: type === 'resource' ? 0 : undefined,
-      registrations: type === 'stream' ? 0 : undefined
-    };
+  const addContent = async (type, content) => {
+    try {
+      const ownerToken = localStorage.getItem('ownerToken');
+      if (!ownerToken) {
+        throw new Error('Owner authentication required');
+      }
 
-    setLearningContent(prev => {
-      const updated = {
-        ...prev,
-        [contentType]: [...prev[contentType], newContent]
-      };
-      console.log('Added content:', newContent);
-      return updated;
-    });
+      const response = await fetch(`${API_BASE_URL}/api/learning`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${ownerToken}`
+        },
+        body: JSON.stringify({ type, content })
+      });
 
-    return newContent;
+      const result = await response.json();
+      
+      if (result.success) {
+        // Update local state
+        const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
+        setLearningContent(prev => ({
+          ...prev,
+          [contentType]: [...prev[contentType], result.data]
+        }));
+        console.log('Added content:', result.data);
+        return result.data;
+      } else {
+        throw new Error(result.message || 'Failed to add content');
+      }
+    } catch (error) {
+      console.error('Error adding content:', error);
+      throw error;
+    }
   };
 
-  const updateContent = (type, id, updates) => {
-    const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
-    
-    setLearningContent(prev => {
-      const updated = {
-        ...prev,
-        [contentType]: prev[contentType].map(item =>
-          item.id === id ? { ...item, ...updates, updatedAt: new Date().toISOString() } : item
-        )
-      };
-      console.log('Updated content:', { type, id, updates });
-      return updated;
-    });
+  const updateContent = async (type, id, updates) => {
+    try {
+      const ownerToken = localStorage.getItem('ownerToken');
+      if (!ownerToken) {
+        throw new Error('Owner authentication required');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/learning`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${ownerToken}`
+        },
+        body: JSON.stringify({ type, id, updates })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Update local state
+        const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
+        setLearningContent(prev => ({
+          ...prev,
+          [contentType]: prev[contentType].map(item =>
+            item.id === id ? result.data : item
+          )
+        }));
+        console.log('Updated content:', result.data);
+      } else {
+        throw new Error(result.message || 'Failed to update content');
+      }
+    } catch (error) {
+      console.error('Error updating content:', error);
+      throw error;
+    }
   };
 
-  const deleteContent = (type, id) => {
-    const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
-    
-    setLearningContent(prev => {
-      const updated = {
-        ...prev,
-        [contentType]: prev[contentType].filter(item => item.id !== id)
-      };
-      console.log('Deleted content:', { type, id });
-      return updated;
-    });
+  const deleteContent = async (type, id) => {
+    try {
+      const ownerToken = localStorage.getItem('ownerToken');
+      if (!ownerToken) {
+        throw new Error('Owner authentication required');
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/learning?type=${type}&id=${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${ownerToken}`
+        }
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        // Update local state
+        const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
+        setLearningContent(prev => ({
+          ...prev,
+          [contentType]: prev[contentType].filter(item => item.id !== id)
+        }));
+        console.log('Deleted content:', { type, id });
+      } else {
+        throw new Error(result.message || 'Failed to delete content');
+      }
+    } catch (error) {
+      console.error('Error deleting content:', error);
+      throw error;
+    }
   };
 
-  const publishContent = (type, id) => {
-    updateContent(type, id, { status: 'Published' });
+  const publishContent = async (type, id) => {
+    await updateContent(type, id, { status: 'Published' });
   };
 
-  const unpublishContent = (type, id) => {
-    updateContent(type, id, { status: 'Draft' });
+  const unpublishContent = async (type, id) => {
+    await updateContent(type, id, { status: 'Draft' });
   };
 
-  const resetToDefaults = () => {
-    localStorage.removeItem('learningContent');
-    window.location.reload();
+  const resetToDefaults = async () => {
+    await loadLearningContent();
   };
 
   const value = {
     learningContent,
     publishedContent: getPublishedContent(),
+    loading,
+    error,
     addContent,
     updateContent,
     deleteContent,
     publishContent,
     unpublishContent,
-    resetToDefaults
+    resetToDefaults,
+    refreshContent: loadLearningContent
   };
 
   // Add error boundary
