@@ -19,8 +19,14 @@ body {
 }
 
 /* HIDE OWNER BUTTON - Professional appearance */
+/* Add ?showadmin=true to URL to show the Owner button */
 button[title="Owner Admin Panel"] {
   display: none !important;
+}
+
+/* Show Owner button when URL contains showadmin=true */
+body[data-show-admin="true"] button[title="Owner Admin Panel"] {
+  display: inline-flex !important;
 }
 
 /* Hide any orange button that might be the owner button */

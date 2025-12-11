@@ -79,6 +79,12 @@ export default function App(){
   useEffect(() => {
     // Check if user is already authenticated
     checkUserAuthentication()
+    
+    // Check if URL contains showadmin=true to show Owner button
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('showadmin') === 'true') {
+      document.body.setAttribute('data-show-admin', 'true')
+    }
   }, [])
 
   useEffect(() => {

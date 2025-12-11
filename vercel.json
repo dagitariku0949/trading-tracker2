@@ -5,12 +5,20 @@
   "framework": "vite",
   "rewrites": [
     {
+      "source": "/admin-panel",
+      "destination": "/admin-panel.html"
+    },
+    {
       "source": "/admin",
       "destination": "/admin.html"
     },
     {
       "source": "/admin.html",
       "destination": "/admin.html"
+    },
+    {
+      "source": "/admin-panel.html",
+      "destination": "/admin-panel.html"
     },
     {
       "source": "/(.*)",
