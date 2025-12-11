@@ -35,7 +35,7 @@ export default function LandingPage({ onEnter, onNavigate }) {
         </p>
 
         {/* Features */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 animate-fade-in-up delay-300">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 animate-fade-in-up delay-300">
           <button
             onClick={() => handleCardClick('trades')}
             className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-lg p-6 hover:border-emerald-500/50 hover:bg-slate-800/70 transition transform hover:scale-105 text-left"
@@ -61,6 +61,16 @@ export default function LandingPage({ onEnter, onNavigate }) {
             <div className="text-3xl mb-3">📈</div>
             <h3 className="text-lg font-semibold text-emerald-400 mb-2">Advanced Analytics</h3>
             <p className="text-sm text-slate-400">Visualize your equity curve and performance metrics</p>
+          </button>
+
+          <button
+            onClick={() => handleCardClick('learning')}
+            className="bg-gradient-to-br from-blue-800/50 to-purple-800/50 backdrop-blur-sm border border-blue-500/50 rounded-lg p-6 hover:border-blue-400/70 hover:from-blue-800/70 hover:to-purple-800/70 transition transform hover:scale-105 text-left relative overflow-hidden"
+          >
+            <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full">NEW</div>
+            <div className="text-3xl mb-3">👨‍🏫</div>
+            <h3 className="text-lg font-semibold text-blue-400 mb-2">Learn with Dagim Tariku</h3>
+            <p className="text-sm text-slate-400">Access exclusive courses, videos, and trading resources</p>
           </button>
         </div>
 

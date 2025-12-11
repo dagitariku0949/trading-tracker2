@@ -18,11 +18,13 @@ import PositionCalculator from './components/PositionCalculator'
 import AdminPanel from './components/AdminPanel'
 import AdminLogin from './components/AdminLogin'
 import UserLogin from './components/UserLogin'
+import LearningHub from './components/LearningHub'
 
 export default function App(){
   const [isUserAuthenticated, setIsUserAuthenticated] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
   const [showLanding, setShowLanding] = useState(true)
+  const [showLearning, setShowLearning] = useState(false)
   const [showAdmin, setShowAdmin] = useState(false)
   const [showAdminLogin, setShowAdminLogin] = useState(false)
   const [isOwnerAuthenticated, setIsOwnerAuthenticated] = useState(false)
@@ -294,8 +296,22 @@ export default function App(){
     return <LandingPage 
       onEnter={() => setShowLanding(false)}
       onNavigate={(tab) => {
-        setActiveTab(tab)
-        setShowLanding(false)
+        if (tab === 'learning') {
+          setShowLearning(true)
+          setShowLanding(false)
+        } else {
+          setActiveTab(tab)
+          setShowLanding(false)
+        }
+      }}
+    />
+  }
+
+  if (showLearning) {
+    return <LearningHub 
+      onBack={() => {
+        setShowLearning(false)
+        setShowLanding(true)
       }}
     />
   }
@@ -348,6 +364,14 @@ export default function App(){
             )}
           </div>
           <div className="flex gap-3">
+            <button
+              onClick={() => setShowLearning(true)}
+              className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-semibold transition relative"
+              title="Learn with Dagim Tariku"
+            >
+              👨‍🏫 Learn
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
+            </button>
             <button
               onClick={handleUserLogout}
               className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg font-semibold transition"
