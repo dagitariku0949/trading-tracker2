@@ -32,7 +32,7 @@ export const LearningProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      const response = await fetch(`${API_BASE_URL}/api/learning`);
+      const response = await fetch(`${API_BASE_URL}/api/learning/content`);
       const result = await response.json();
       
       if (result.success) {
@@ -92,13 +92,13 @@ export const LearningProvider = ({ children }) => {
         throw new Error('Owner authentication required');
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/learning`, {
+      const response = await fetch(`${API_BASE_URL}/api/learning/content/${type}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${ownerToken}`
         },
-        body: JSON.stringify({ type, content })
+        body: JSON.stringify(content)
       });
 
       const result = await response.json();
@@ -128,13 +128,13 @@ export const LearningProvider = ({ children }) => {
         throw new Error('Owner authentication required');
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/learning`, {
+      const response = await fetch(`${API_BASE_URL}/api/learning/content/${type}/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${ownerToken}`
         },
-        body: JSON.stringify({ type, id, updates })
+        body: JSON.stringify(updates)
       });
 
       const result = await response.json();
@@ -165,7 +165,7 @@ export const LearningProvider = ({ children }) => {
         throw new Error('Owner authentication required');
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/learning?type=${type}&id=${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/learning/content/${type}/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${ownerToken}`
