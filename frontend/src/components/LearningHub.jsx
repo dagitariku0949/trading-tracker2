@@ -45,8 +45,7 @@ const LearningHub = ({ onBack }) => {
     );
   }
 
-  // DEBUG: Use raw content instead of filtered publishedContent
-  const { learningContent: rawContent } = useLearning();
+  // Use raw content instead of filtered publishedContent
   const learningContent = rawContent || {
     courses: [],
     videos: [],
@@ -54,7 +53,7 @@ const LearningHub = ({ onBack }) => {
     resources: []
   };
   
-  // TEMP: Force show all courses regardless of status
+  // Force show all courses regardless of status
   if (learningContent.courses) {
     learningContent.courses = learningContent.courses.map(course => ({
       ...course,
