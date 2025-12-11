@@ -341,6 +341,11 @@ export default function App(){
 
   return (
     <LearningProvider>
+      {/* BIG RED BANNER TO IDENTIFY VERSION */}
+      <div className="bg-red-600 text-white p-4 text-center text-xl font-bold">
+        🚨 UPDATED VERSION - NO OWNER BUTTON - VERSION 2024-12-11 🚨
+      </div>
+      
       <div className="min-h-screen bg-slate-900 text-white p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
