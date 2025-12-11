@@ -1,10 +1,12 @@
-Force deployment trigger - 2024-12-11 - Updated learning content
+Force deployment trigger - 2024-12-11 - API Sync Fix
 This file is created to force a new deployment and ensure all changes are live.
-Timestamp: 2024-12-11T${new Date().toISOString().split('T')[1]}
+Timestamp: 2024-12-11T15:30:00Z
 
 Changes made:
-- Updated learning content to show 3 courses consistently
-- Added hardcoded content to bypass API caching issues
-- Added debug banners to identify deployment versions
+- Fixed Vercel API routing configuration
+- Updated API base URL to use dynamic origin
+- Added proper serverless function configuration
+- Enhanced debugging for API calls
+- Fixed admin panel sync issues
 
-Expected result: All browsers should show the same 3 courses with debug banner.
+Expected result: Learning content should load properly and admin changes should sync to main website.
