@@ -3,14 +3,31 @@ import axios from 'axios';
 import { useLearning } from '../contexts/LearningContext';
 
 const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) => {
-  const { 
-    learningContent, 
-    addContent, 
-    updateContent, 
-    deleteContent, 
-    publishContent, 
-    unpublishContent 
-  } = useLearning();
+  let learningContent, addContent, updateContent, deleteContent, publishContent, unpublishContent;
+  
+  try {
+    const learningContext = useLearning();
+    learningContent = learningContext.learningContent;
+    addContent = learningContext.addContent;
+    updateContent = learningContext.updateContent;
+    deleteContent = learningContext.deleteContent;
+    publishContent = learningContext.publishContent;
+    unpublishContent = learningContext.unpublishContent;
+  } catch (error) {
+    console.error('Learning context error:', error);
+    // Fallback data
+    learningContent = {
+      courses: [],
+      videos: [],
+      liveStreams: [],
+      resources: []
+    };
+    addContent = () => {};
+    updateContent = () => {};
+    deleteContent = () => {};
+    publishContent = () => {};
+    unpublishContent = () => {};
+  }
   const [serverStatus, setServerStatus] = useState({
     backend: 'checking',
     database: 'checking',

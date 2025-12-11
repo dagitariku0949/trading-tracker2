@@ -11,7 +11,7 @@ export const useLearning = () => {
 };
 
 export const LearningProvider = ({ children }) => {
-  const [learningContent, setLearningContent] = useState({
+  const [learningContent, setLearningContent] = useState(() => ({
     courses: [
       {
         id: 1,
@@ -109,7 +109,7 @@ export const LearningProvider = ({ children }) => {
         uploadDate: "2024-02-20"
       }
     ]
-  });
+  }));
 
   // Get only published content for public display
   const getPublishedContent = () => {
@@ -182,9 +182,15 @@ export const LearningProvider = ({ children }) => {
     unpublishContent
   };
 
-  return (
-    <LearningContext.Provider value={value}>
-      {children}
-    </LearningContext.Provider>
-  );
+  // Add error boundary
+  try {
+    return (
+      <LearningContext.Provider value={value}>
+        {children}
+      </LearningContext.Provider>
+    );
+  } catch (error) {
+    console.error('LearningContext error:', error);
+    return <div>Error loading learning content</div>;
+  }
 };

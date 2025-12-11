@@ -4,9 +4,35 @@ import { useLearning } from '../contexts/LearningContext';
 const LearningHub = ({ onBack }) => {
   const [activeCategory, setActiveCategory] = useState('courses');
   const [selectedVideo, setSelectedVideo] = useState(null);
-  const { publishedContent } = useLearning();
+  
+  let publishedContent;
+  try {
+    const learningContext = useLearning();
+    publishedContent = learningContext.publishedContent;
+  } catch (error) {
+    console.error('Learning context error:', error);
+    // Fallback data
+    publishedContent = {
+      courses: [
+        {
+          id: 1,
+          title: "Complete Forex Trading Mastery",
+          description: "Master the fundamentals of forex trading from beginner to advanced level",
+          duration: "12 hours",
+          lessons: 24,
+          level: "Beginner to Advanced",
+          price: "Free",
+          thumbnail: "🎓",
+          topics: ["Market Analysis", "Risk Management", "Trading Psychology", "Technical Analysis"]
+        }
+      ],
+      videos: [],
+      liveStreams: [],
+      resources: []
+    };
+  }
 
-  // Use published content from context instead of static data
+  // Use published content from context or fallback
   const learningContent = publishedContent;
 
   const categories = [

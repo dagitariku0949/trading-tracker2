@@ -290,47 +290,67 @@ export default function App(){
 
   // Show user login if not authenticated
   if (!isUserAuthenticated) {
-    return <UserLogin onLogin={handleUserLogin} />
+    return (
+      <LearningProvider>
+        <UserLogin onLogin={handleUserLogin} />
+      </LearningProvider>
+    )
   }
 
   if (showLanding) {
-    return <LandingPage 
-      onEnter={() => setShowLanding(false)}
-      onNavigate={(tab) => {
-        if (tab === 'learning') {
-          setShowLearning(true)
-          setShowLanding(false)
-        } else {
-          setActiveTab(tab)
-          setShowLanding(false)
-        }
-      }}
-    />
+    return (
+      <LearningProvider>
+        <LandingPage 
+          onEnter={() => setShowLanding(false)}
+          onNavigate={(tab) => {
+            if (tab === 'learning') {
+              setShowLearning(true)
+              setShowLanding(false)
+            } else {
+              setActiveTab(tab)
+              setShowLanding(false)
+            }
+          }}
+        />
+      </LearningProvider>
+    )
   }
 
   if (showLearning) {
-    return <LearningHub 
-      onBack={() => {
-        setShowLearning(false)
-        setShowLanding(true)
-      }}
-    />
+    return (
+      <LearningProvider>
+        <LearningHub 
+          onBack={() => {
+            setShowLearning(false)
+            setShowLanding(true)
+          }}
+        />
+      </LearningProvider>
+    )
   }
 
   if (showAdminLogin) {
-    return <AdminLogin 
-      onLogin={handleOwnerLogin}
-      onCancel={() => setShowAdminLogin(false)}
-    />
+    return (
+      <LearningProvider>
+        <AdminLogin 
+          onLogin={handleOwnerLogin}
+          onCancel={() => setShowAdminLogin(false)}
+        />
+      </LearningProvider>
+    )
   }
 
   if (showAdmin && isOwnerAuthenticated) {
-    return <AdminPanel 
-      onBackToDashboard={() => setShowAdmin(false)}
-      onLogout={handleLogout}
-      trades={trades}
-      metrics={metrics}
-    />
+    return (
+      <LearningProvider>
+        <AdminPanel 
+          onBackToDashboard={() => setShowAdmin(false)}
+          onLogout={handleLogout}
+          trades={trades}
+          metrics={metrics}
+        />
+      </LearningProvider>
+    )
   }
 
   if (loading) {
