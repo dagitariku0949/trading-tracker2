@@ -353,7 +353,7 @@ export default function App(){
               LEAP
             </button>
             <div className="h-6 w-px bg-slate-700"></div>
-            <h1 className="text-2xl font-semibold text-slate-300">Trading Dashboard</h1>
+            <h1 className="text-2xl font-semibold text-slate-300">Trading Dashboard - NO ADMIN BUTTON</h1>
             {currentUser && (
               <>
                 <div className="h-6 w-px bg-slate-700"></div>
@@ -364,6 +364,7 @@ export default function App(){
             )}
           </div>
           <div className="flex gap-3">
+            {/* CLEAN VERSION - NO ADMIN BUTTON */}
             <button
               onClick={() => setShowLearning(true)}
               className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-semibold transition relative"
