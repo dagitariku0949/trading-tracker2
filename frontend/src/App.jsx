@@ -30,25 +30,7 @@ export default function App(){
   const [showAdminLogin, setShowAdminLogin] = useState(false)
   const [isOwnerAuthenticated, setIsOwnerAuthenticated] = useState(false)
   
-  // Check if this is admin mode based on URL
-  const [isAdminMode, setIsAdminMode] = useState(false)
-  
-  // Secret keyboard shortcut for admin access (Ctrl+Shift+A)
-  useEffect(() => {
-    const handleKeyPress = (event) => {
-      if (event.ctrlKey && event.shiftKey && event.key === 'A') {
-        console.log('🔧 Secret admin shortcut activated!');
-        setIsAdminMode(true);
-        setShowLanding(false);
-        setShowAdminLogin(true);
-        // Update URL to show admin mode
-        window.history.pushState({}, '', window.location.pathname + '?admin=true');
-      }
-    };
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [])
   const [activeTab, setActiveTab] = useState('overview')
   const [showImport, setShowImport] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -95,31 +77,6 @@ export default function App(){
   }
 
   useEffect(() => {
-    // DEBUG: Log current URL info
-    console.log('🔍 URL Debug Info:');
-    console.log('- Full URL:', window.location.href);
-    console.log('- Search params:', window.location.search);
-    console.log('- Pathname:', window.location.pathname);
-    
-    // Check if URL contains admin parameter
-    const urlParams = new URLSearchParams(window.location.search)
-    const adminParam = urlParams.get('admin')
-    const isAdminPath = window.location.pathname.includes('/admin')
-    const isAdmin = adminParam === 'true' || isAdminPath
-    
-    console.log('🔍 Admin Detection:');
-    console.log('- Admin param:', adminParam);
-    console.log('- Admin path:', isAdminPath);
-    console.log('- Is Admin Mode:', isAdmin);
-    
-    if (isAdmin) {
-      setIsAdminMode(true)
-      setShowLanding(false)
-      setShowAdminLogin(true)
-      console.log('🔧 Admin mode activated - Access via URL parameter')
-      return
-    }
-    
     // Check if user is already authenticated
     checkUserAuthentication()
   }, [])
@@ -327,56 +284,7 @@ export default function App(){
     }
   }
 
-  // ADMIN MODE - Separate admin interface
-  if (isAdminMode) {
-    if (showAdminLogin && !isOwnerAuthenticated) {
-      return (
-        <LearningProvider>
-          <div className="min-h-screen bg-slate-900 text-white">
-            {/* Admin Mode Header */}
-            <div className="bg-orange-600 text-white p-4 text-center">
-              <h1 className="text-2xl font-bold">🔧 ADMIN PANEL - OWNER ACCESS ONLY</h1>
-              <p className="text-sm opacity-90">Dedicated admin interface for content management</p>
-            </div>
-            <AdminLogin 
-              onLogin={handleOwnerLogin}
-              onBack={() => {
-                setIsAdminMode(false)
-                setShowAdminLogin(false)
-                setShowLanding(true)
-                window.history.replaceState({}, '', window.location.pathname)
-              }}
-            />
-          </div>
-        </LearningProvider>
-      )
-    }
-    
-    if (isOwnerAuthenticated) {
-      return (
-        <LearningProvider>
-          <div className="min-h-screen bg-slate-900 text-white">
-            {/* Admin Mode Header */}
-            <div className="bg-green-600 text-white p-4 text-center">
-              <h1 className="text-2xl font-bold">🔧 ADMIN PANEL - AUTHENTICATED</h1>
-              <p className="text-sm opacity-90">Full admin access for content management</p>
-            </div>
-            <AdminPanel 
-              onBackToDashboard={() => {
-                setIsAdminMode(false)
-                setShowAdmin(false)
-                setShowLanding(true)
-                window.history.replaceState({}, '', window.location.pathname)
-              }}
-              onLogout={handleOwnerLogout}
-              trades={trades}
-              metrics={metrics}
-            />
-          </div>
-        </LearningProvider>
-      )
-    }
-  }
+
 
   // Show user login if not authenticated
   if (!isUserAuthenticated) {
@@ -433,13 +341,6 @@ export default function App(){
 
   return (
     <LearningProvider>
-      {/* DEBUG: Show URL info for troubleshooting */}
-      <div className="fixed top-0 right-0 bg-red-600 text-white p-2 text-xs z-50 max-w-xs">
-        <div>URL: {window.location.href}</div>
-        <div>Admin Mode: {isAdminMode ? 'YES' : 'NO'}</div>
-        <div>Press Ctrl+Shift+A for admin</div>
-      </div>
-      
       <div className="min-h-screen bg-slate-900 text-white p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
