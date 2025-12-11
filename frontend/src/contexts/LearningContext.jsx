@@ -11,7 +11,19 @@ export const useLearning = () => {
 };
 
 export const LearningProvider = ({ children }) => {
-  const [learningContent, setLearningContent] = useState(() => ({
+  // Load initial state from localStorage or use default
+  const [learningContent, setLearningContent] = useState(() => {
+    try {
+      const saved = localStorage.getItem('learningContent');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (error) {
+      console.error('Error loading saved learning content:', error);
+    }
+    
+    // Default content if nothing saved
+    return {
     courses: [
       {
         id: 1,
@@ -109,7 +121,18 @@ export const LearningProvider = ({ children }) => {
         uploadDate: "2024-02-20"
       }
     ]
-  }));
+    };
+  });
+
+  // Save to localStorage whenever content changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('learningContent', JSON.stringify(learningContent));
+      console.log('Learning content saved to localStorage');
+    } catch (error) {
+      console.error('Error saving learning content:', error);
+    }
+  }, [learningContent]);
 
   // Get only published content for public display
   const getPublishedContent = () => {
@@ -138,10 +161,14 @@ export const LearningProvider = ({ children }) => {
       registrations: type === 'stream' ? 0 : undefined
     };
 
-    setLearningContent(prev => ({
-      ...prev,
-      [contentType]: [...prev[contentType], newContent]
-    }));
+    setLearningContent(prev => {
+      const updated = {
+        ...prev,
+        [contentType]: [...prev[contentType], newContent]
+      };
+      console.log('Added content:', newContent);
+      return updated;
+    });
 
     return newContent;
   };
@@ -149,21 +176,29 @@ export const LearningProvider = ({ children }) => {
   const updateContent = (type, id, updates) => {
     const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
     
-    setLearningContent(prev => ({
-      ...prev,
-      [contentType]: prev[contentType].map(item =>
-        item.id === id ? { ...item, ...updates, updatedAt: new Date().toISOString() } : item
-      )
-    }));
+    setLearningContent(prev => {
+      const updated = {
+        ...prev,
+        [contentType]: prev[contentType].map(item =>
+          item.id === id ? { ...item, ...updates, updatedAt: new Date().toISOString() } : item
+        )
+      };
+      console.log('Updated content:', { type, id, updates });
+      return updated;
+    });
   };
 
   const deleteContent = (type, id) => {
     const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
     
-    setLearningContent(prev => ({
-      ...prev,
-      [contentType]: prev[contentType].filter(item => item.id !== id)
-    }));
+    setLearningContent(prev => {
+      const updated = {
+        ...prev,
+        [contentType]: prev[contentType].filter(item => item.id !== id)
+      };
+      console.log('Deleted content:', { type, id });
+      return updated;
+    });
   };
 
   const publishContent = (type, id) => {
@@ -174,6 +209,11 @@ export const LearningProvider = ({ children }) => {
     updateContent(type, id, { status: 'Draft' });
   };
 
+  const resetToDefaults = () => {
+    localStorage.removeItem('learningContent');
+    window.location.reload();
+  };
+
   const value = {
     learningContent,
     publishedContent: getPublishedContent(),
@@ -181,7 +221,8 @@ export const LearningProvider = ({ children }) => {
     updateContent,
     deleteContent,
     publishContent,
-    unpublishContent
+    unpublishContent,
+    resetToDefaults
   };
 
   // Add error boundary

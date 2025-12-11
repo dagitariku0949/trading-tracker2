@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useLearning } from '../contexts/LearningContext';
 
 const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) => {
-  let learningContent, addContent, updateContent, deleteContent, publishContent, unpublishContent;
+  let learningContent, addContent, updateContent, deleteContent, publishContent, unpublishContent, resetToDefaults;
   
   try {
     const learningContext = useLearning();
@@ -13,6 +13,7 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
     deleteContent = learningContext.deleteContent;
     publishContent = learningContext.publishContent;
     unpublishContent = learningContext.unpublishContent;
+    resetToDefaults = learningContext.resetToDefaults;
   } catch (error) {
     console.error('Learning context error:', error);
     // Fallback data
@@ -27,6 +28,7 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
     deleteContent = () => {};
     publishContent = () => {};
     unpublishContent = () => {};
+    resetToDefaults = () => {};
   }
   const [serverStatus, setServerStatus] = useState({
     backend: 'checking',
@@ -1148,10 +1150,14 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
                     📊<br />Analytics
                   </button>
                   <button
-                    onClick={() => addLog('Content backup created', 'success')}
-                    className="bg-orange-600 hover:bg-orange-700 px-4 py-3 rounded-lg transition-colors text-center"
+                    onClick={() => {
+                      if (confirm('Reset all learning content to defaults? This will delete all your custom courses!')) {
+                        resetToDefaults();
+                      }
+                    }}
+                    className="bg-red-600 hover:bg-red-700 px-4 py-3 rounded-lg transition-colors text-center"
                   >
-                    💾<br />Backup
+                    🔄<br />Reset
                   </button>
                 </div>
               </div>
