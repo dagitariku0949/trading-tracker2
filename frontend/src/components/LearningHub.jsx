@@ -5,30 +5,46 @@ const LearningHub = ({ onBack }) => {
   const [activeCategory, setActiveCategory] = useState('courses');
   const [selectedVideo, setSelectedVideo] = useState(null);
   
-  let publishedContent = null;
-  let contextError = false;
-  
-  try {
-    const learningContext = useLearning();
-    publishedContent = learningContext.publishedContent;
-    console.log('Learning context loaded:', publishedContent);
-  } catch (error) {
-    console.error('Learning context error:', error);
-    contextError = true;
+  const { publishedContent, loading, error } = useLearning();
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
+          <p className="text-slate-400">Loading learning content...</p>
+        </div>
+      </div>
+    );
   }
 
-  // Only use fallback if context completely failed AND we have no published content
-  if (contextError || !publishedContent) {
-    publishedContent = {
-      courses: [],
-      videos: [],
-      liveStreams: [],
-      resources: []
-    };
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-4xl mb-4">⚠️</div>
+          <p className="text-red-400 mb-4">Failed to load learning content</p>
+          <p className="text-slate-400 text-sm">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
   }
 
-  // Use published content from context or fallback
-  const learningContent = publishedContent;
+  // Use published content from context
+  const learningContent = publishedContent || {
+    courses: [],
+    videos: [],
+    liveStreams: [],
+    resources: []
+  };
 
   const categories = [
     { id: 'courses', label: 'Courses', icon: '🎓' },
