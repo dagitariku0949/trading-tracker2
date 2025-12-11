@@ -5,27 +5,22 @@ const LearningHub = ({ onBack }) => {
   const [activeCategory, setActiveCategory] = useState('courses');
   const [selectedVideo, setSelectedVideo] = useState(null);
   
-  let publishedContent;
+  let publishedContent = null;
+  let contextError = false;
+  
   try {
     const learningContext = useLearning();
     publishedContent = learningContext.publishedContent;
+    console.log('Learning context loaded:', publishedContent);
   } catch (error) {
     console.error('Learning context error:', error);
-    // Fallback data
+    contextError = true;
+  }
+
+  // Only use fallback if context completely failed AND we have no published content
+  if (contextError || !publishedContent) {
     publishedContent = {
-      courses: [
-        {
-          id: 1,
-          title: "Complete Forex Trading Mastery",
-          description: "Master the fundamentals of forex trading from beginner to advanced level",
-          duration: "12 hours",
-          lessons: 24,
-          level: "Beginner to Advanced",
-          price: "Free",
-          thumbnail: "🎓",
-          topics: ["Market Analysis", "Risk Management", "Trading Psychology", "Technical Analysis"]
-        }
-      ],
+      courses: [],
       videos: [],
       liveStreams: [],
       resources: []

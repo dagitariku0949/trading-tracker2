@@ -113,12 +113,14 @@ export const LearningProvider = ({ children }) => {
 
   // Get only published content for public display
   const getPublishedContent = () => {
-    return {
+    const published = {
       courses: learningContent.courses.filter(course => course.status === 'Published'),
       videos: learningContent.videos.filter(video => video.status === 'Published'),
       liveStreams: learningContent.liveStreams.filter(stream => stream.status === 'Scheduled' || stream.status === 'Live'),
       resources: learningContent.resources.filter(resource => resource.status === 'Published')
     };
+    console.log('Published content:', published);
+    return published;
   };
 
   // Admin functions for managing content
