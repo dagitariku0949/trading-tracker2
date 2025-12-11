@@ -18,6 +18,17 @@ body {
   box-sizing: border-box;
 }
 
+/* HIDE OWNER BUTTON - Professional appearance */
+button[title="Owner Admin Panel"] {
+  display: none !important;
+}
+
+/* Hide any orange button that might be the owner button */
+.bg-orange-600:has-text("Owner"),
+.bg-orange-600:has-text("🔧") {
+  display: none !important;
+}
+
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;
