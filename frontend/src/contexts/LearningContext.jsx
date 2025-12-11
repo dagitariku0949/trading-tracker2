@@ -10,7 +10,7 @@ export const useLearning = () => {
   return context;
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://leap-trading-dashboard.vercel.app';
+const API_BASE_URL = import.meta.env.VITE_API_URL || window.location.origin;
 
 export const LearningProvider = ({ children }) => {
   const [learningContent, setLearningContent] = useState({
@@ -48,6 +48,7 @@ export const LearningProvider = ({ children }) => {
       try {
         const cacheBuster = `?v=${Date.now()}&force=true`;
         const apiUrl = `${API_BASE_URL}/api/learning${cacheBuster}`;
+        console.log('API_BASE_URL:', API_BASE_URL);
         console.log('Fetching from API:', apiUrl);
         
         const response = await fetch(apiUrl, {
@@ -58,6 +59,9 @@ export const LearningProvider = ({ children }) => {
             'Expires': '0'
           }
         });
+        
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
         
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
