@@ -185,13 +185,7 @@ export default function App(){
     setShowAdmin(true)
   }
 
-  const handleAdminAccess = () => {
-    if (isOwnerAuthenticated) {
-      setShowAdmin(true)
-    } else {
-      setShowAdminLogin(true)
-    }
-  }
+
 
   const handleLogout = () => {
     sessionStorage.removeItem('ownerAuthToken')
@@ -395,29 +389,9 @@ export default function App(){
     )
   }
 
-  if (showAdminLogin) {
-    return (
-      <LearningProvider>
-        <AdminLogin 
-          onLogin={handleOwnerLogin}
-          onCancel={() => setShowAdminLogin(false)}
-        />
-      </LearningProvider>
-    )
-  }
 
-  if (showAdmin && isOwnerAuthenticated) {
-    return (
-      <LearningProvider>
-        <AdminPanel 
-          onBackToDashboard={() => setShowAdmin(false)}
-          onLogout={handleLogout}
-          trades={trades}
-          metrics={metrics}
-        />
-      </LearningProvider>
-    )
-  }
+
+
 
   if (loading) {
     return (
@@ -467,17 +441,7 @@ export default function App(){
             >
               🚪 Logout
             </button>
-            {/* Owner-only Admin Button */}
-            <button
-              onClick={handleAdminAccess}
-              className="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg font-semibold transition relative"
-              title="Owner Admin Panel"
-            >
-              🔧 {isOwnerAuthenticated ? 'Admin' : 'Owner'}
-              {isOwnerAuthenticated && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full"></div>
-              )}
-            </button>
+
             <button
               onClick={() => setShowSettings(true)}
               className="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg font-semibold transition"
