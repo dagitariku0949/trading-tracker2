@@ -5,7 +5,7 @@ const LearningHub = ({ onBack }) => {
   const [activeCategory, setActiveCategory] = useState('courses');
   const [selectedVideo, setSelectedVideo] = useState(null);
   
-  const { publishedContent, loading, error, forceRefresh } = useLearning();
+  const { publishedContent, learningContent: rawContent, loading, error, forceRefresh } = useLearning();
 
   // DEBUG: Log the actual content
   console.log('=== LEARNING HUB DEBUG ===');
@@ -45,13 +45,22 @@ const LearningHub = ({ onBack }) => {
     );
   }
 
-  // Use published content from context
-  const learningContent = publishedContent || {
+  // DEBUG: Use raw content instead of filtered publishedContent
+  const { learningContent: rawContent } = useLearning();
+  const learningContent = rawContent || {
     courses: [],
     videos: [],
     liveStreams: [],
     resources: []
   };
+  
+  // TEMP: Force show all courses regardless of status
+  if (learningContent.courses) {
+    learningContent.courses = learningContent.courses.map(course => ({
+      ...course,
+      status: 'Published' // Force all courses to be published
+    }));
+  }
 
   const categories = [
     { id: 'courses', label: 'Courses', icon: '🎓' },
