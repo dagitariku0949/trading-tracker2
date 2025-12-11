@@ -20,6 +20,15 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
   const [tradingSummary, setTradingSummary] = useState([]);
   const [selectedUserTrades, setSelectedUserTrades] = useState(null);
   const [showTradesModal, setShowTradesModal] = useState(false);
+  const [learningContent, setLearningContent] = useState({
+    courses: [],
+    videos: [],
+    liveStreams: [],
+    resources: []
+  });
+  const [showContentModal, setShowContentModal] = useState(false);
+  const [contentModalType, setContentModalType] = useState('');
+  const [editingContent, setEditingContent] = useState(null);
   const [systemInfo, setSystemInfo] = useState({
     memory: '0 MB',
     cpu: '0%',
@@ -31,6 +40,7 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
     loadSystemInfo();
     loadUsers();
     loadTradingSummary();
+    loadLearningContent();
     const interval = setInterval(checkServerStatus, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -74,6 +84,122 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
     } catch (error) {
       addLog('Failed to load user trades: ' + (error.response?.data?.message || error.message), 'error');
       console.error('Error loading user trades:', error);
+    }
+  };
+
+  const loadLearningContent = () => {
+    // Mock learning content (in production, this would come from database)
+    const mockContent = {
+      courses: [
+        {
+          id: 1,
+          title: "Complete Forex Trading Mastery",
+          description: "Master the fundamentals of forex trading",
+          price: "Free",
+          duration: "12 hours",
+          lessons: 24,
+          students: 156,
+          status: "Published",
+          createdAt: "2024-01-15"
+        },
+        {
+          id: 2,
+          title: "Advanced Price Action Strategies",
+          description: "Professional price action techniques",
+          price: "$99",
+          duration: "8 hours",
+          lessons: 16,
+          students: 89,
+          status: "Published",
+          createdAt: "2024-02-10"
+        }
+      ],
+      videos: [
+        {
+          id: 1,
+          title: "How to Identify High Probability Setups",
+          description: "Learn key factors for high probability trades",
+          duration: "15:30",
+          views: 12500,
+          likes: 890,
+          status: "Published",
+          uploadDate: "2024-03-01"
+        },
+        {
+          id: 2,
+          title: "Risk Management Masterclass",
+          description: "Master risk management techniques",
+          duration: "22:15",
+          views: 8900,
+          likes: 654,
+          status: "Published",
+          uploadDate: "2024-03-05"
+        }
+      ],
+      liveStreams: [
+        {
+          id: 1,
+          title: "Weekly Market Analysis",
+          description: "Live analysis of current market conditions",
+          scheduledDate: "2024-12-15T15:00:00Z",
+          duration: "60 minutes",
+          registrations: 45,
+          status: "Scheduled"
+        },
+        {
+          id: 2,
+          title: "Q&A Trading Session",
+          description: "Answer your trading questions live",
+          scheduledDate: "2024-12-18T18:00:00Z",
+          duration: "90 minutes",
+          registrations: 32,
+          status: "Scheduled"
+        }
+      ],
+      resources: [
+        {
+          id: 1,
+          title: "Trading Journal Template",
+          description: "Professional Excel template",
+          type: "Excel",
+          downloads: 234,
+          status: "Published",
+          uploadDate: "2024-02-20"
+        }
+      ]
+    };
+    
+    setLearningContent(mockContent);
+    addLog('Learning content loaded successfully', 'success');
+  };
+
+  const handleContentAction = (action, type, content = null) => {
+    switch (action) {
+      case 'add':
+        setContentModalType(type);
+        setEditingContent(null);
+        setShowContentModal(true);
+        addLog(`Opening ${type} creation form`, 'info');
+        break;
+      case 'edit':
+        setContentModalType(type);
+        setEditingContent(content);
+        setShowContentModal(true);
+        addLog(`Editing ${type}: ${content.title}`, 'info');
+        break;
+      case 'delete':
+        if (confirm(`Delete ${type}: ${content.title}?`)) {
+          addLog(`Deleted ${type}: ${content.title}`, 'warning');
+        }
+        break;
+      case 'publish':
+        addLog(`Published ${type}: ${content.title}`, 'success');
+        break;
+      case 'unpublish':
+        addLog(`Unpublished ${type}: ${content.title}`, 'warning');
+        break;
+      default:
+        break;
     }
   };
 
@@ -277,6 +403,7 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
             { id: 'overview', label: 'Overview', icon: '📊' },
             { id: 'users', label: 'Users', icon: '👥' },
             { id: 'trading', label: 'Trading Analytics', icon: '📈' },
+            { id: 'learning', label: 'Learning Management', icon: '🎓' },
             { id: 'monitoring', label: 'Monitoring', icon: '🖥️' },
             { id: 'database', label: 'Database', icon: '💾' },
             { id: 'logs', label: 'Logs', icon: '📋' },
@@ -700,6 +827,288 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
           </div>
         )}
 
+        {/* Learning Management Tab */}
+        {activeTab === 'learning' && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Learning Management System</h2>
+            
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className="bg-blue-600 p-2 rounded">🎓</div>
+                  <div>
+                    <p className="text-gray-400 text-sm">TOTAL COURSES</p>
+                    <p className="text-2xl font-bold">{learningContent.courses.length}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className="bg-red-600 p-2 rounded">🎥</div>
+                  <div>
+                    <p className="text-gray-400 text-sm">TOTAL VIDEOS</p>
+                    <p className="text-2xl font-bold">{learningContent.videos.length}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className="bg-purple-600 p-2 rounded">📡</div>
+                  <div>
+                    <p className="text-gray-400 text-sm">LIVE STREAMS</p>
+                    <p className="text-2xl font-bold">{learningContent.liveStreams.length}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className="bg-green-600 p-2 rounded">📚</div>
+                  <div>
+                    <p className="text-gray-400 text-sm">RESOURCES</p>
+                    <p className="text-2xl font-bold">{learningContent.resources.length}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Content Management Sections */}
+            <div className="space-y-8">
+              
+              {/* Courses Management */}
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold">📚 Courses Management</h3>
+                  <button
+                    onClick={() => handleContentAction('add', 'course')}
+                    className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors"
+                  >
+                    + Add Course
+                  </button>
+                </div>
+                
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-gray-700">
+                        <th className="pb-3 text-gray-400">Course</th>
+                        <th className="pb-3 text-gray-400">Price</th>
+                        <th className="pb-3 text-gray-400">Students</th>
+                        <th className="pb-3 text-gray-400">Status</th>
+                        <th className="pb-3 text-gray-400">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {learningContent.courses.map(course => (
+                        <tr key={course.id} className="border-b border-gray-700">
+                          <td className="py-3">
+                            <div>
+                              <div className="text-white font-medium">{course.title}</div>
+                              <div className="text-gray-400 text-sm">{course.lessons} lessons • {course.duration}</div>
+                            </div>
+                          </td>
+                          <td className="py-3 text-emerald-400 font-bold">{course.price}</td>
+                          <td className="py-3 text-gray-300">{course.students}</td>
+                          <td className="py-3">
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              course.status === 'Published' ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300'
+                            }`}>
+                              {course.status}
+                            </span>
+                          </td>
+                          <td className="py-3">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleContentAction('edit', 'course', course)}
+                                className="bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleContentAction('delete', 'course', course)}
+                                className="bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-xs"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Videos Management */}
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold">🎥 Videos Management</h3>
+                  <button
+                    onClick={() => handleContentAction('add', 'video')}
+                    className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-colors"
+                  >
+                    + Upload Video
+                  </button>
+                </div>
+                
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-gray-700">
+                        <th className="pb-3 text-gray-400">Video</th>
+                        <th className="pb-3 text-gray-400">Duration</th>
+                        <th className="pb-3 text-gray-400">Views</th>
+                        <th className="pb-3 text-gray-400">Likes</th>
+                        <th className="pb-3 text-gray-400">Status</th>
+                        <th className="pb-3 text-gray-400">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {learningContent.videos.map(video => (
+                        <tr key={video.id} className="border-b border-gray-700">
+                          <td className="py-3">
+                            <div>
+                              <div className="text-white font-medium">{video.title}</div>
+                              <div className="text-gray-400 text-sm">{video.description}</div>
+                            </div>
+                          </td>
+                          <td className="py-3 text-gray-300">{video.duration}</td>
+                          <td className="py-3 text-gray-300">{video.views.toLocaleString()}</td>
+                          <td className="py-3 text-gray-300">{video.likes}</td>
+                          <td className="py-3">
+                            <span className="bg-green-900 text-green-300 px-2 py-1 rounded text-xs">
+                              {video.status}
+                            </span>
+                          </td>
+                          <td className="py-3">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleContentAction('edit', 'video', video)}
+                                className="bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleContentAction('delete', 'video', video)}
+                                className="bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-xs"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Live Streams Management */}
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold">📡 Live Streams Management</h3>
+                  <button
+                    onClick={() => handleContentAction('add', 'stream')}
+                    className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg transition-colors"
+                  >
+                    + Schedule Stream
+                  </button>
+                </div>
+                
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-gray-700">
+                        <th className="pb-3 text-gray-400">Stream</th>
+                        <th className="pb-3 text-gray-400">Scheduled Date</th>
+                        <th className="pb-3 text-gray-400">Duration</th>
+                        <th className="pb-3 text-gray-400">Registrations</th>
+                        <th className="pb-3 text-gray-400">Status</th>
+                        <th className="pb-3 text-gray-400">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {learningContent.liveStreams.map(stream => (
+                        <tr key={stream.id} className="border-b border-gray-700">
+                          <td className="py-3">
+                            <div>
+                              <div className="text-white font-medium">{stream.title}</div>
+                              <div className="text-gray-400 text-sm">{stream.description}</div>
+                            </div>
+                          </td>
+                          <td className="py-3 text-gray-300">
+                            {new Date(stream.scheduledDate).toLocaleString()}
+                          </td>
+                          <td className="py-3 text-gray-300">{stream.duration}</td>
+                          <td className="py-3 text-gray-300">{stream.registrations}</td>
+                          <td className="py-3">
+                            <span className="bg-blue-900 text-blue-300 px-2 py-1 rounded text-xs">
+                              {stream.status}
+                            </span>
+                          </td>
+                          <td className="py-3">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => addLog(`Starting live stream: ${stream.title}`, 'info')}
+                                className="bg-green-600 hover:bg-green-700 px-2 py-1 rounded text-xs"
+                              >
+                                Start
+                              </button>
+                              <button
+                                onClick={() => handleContentAction('edit', 'stream', stream)}
+                                className="bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs"
+                              >
+                                Edit
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <h3 className="text-xl font-bold mb-4">🚀 Quick Actions</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <button
+                    onClick={() => {
+                      loadLearningContent();
+                      addLog('Learning content refreshed', 'success');
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 px-4 py-3 rounded-lg transition-colors text-center"
+                  >
+                    🔄<br />Refresh Content
+                  </button>
+                  <button
+                    onClick={() => addLog('Bulk content export initiated', 'info')}
+                    className="bg-green-600 hover:bg-green-700 px-4 py-3 rounded-lg transition-colors text-center"
+                  >
+                    📤<br />Export All
+                  </button>
+                  <button
+                    onClick={() => addLog('Analytics report generated', 'success')}
+                    className="bg-purple-600 hover:bg-purple-700 px-4 py-3 rounded-lg transition-colors text-center"
+                  >
+                    📊<br />Analytics
+                  </button>
+                  <button
+                    onClick={() => addLog('Content backup created', 'success')}
+                    className="bg-orange-600 hover:bg-orange-700 px-4 py-3 rounded-lg transition-colors text-center"
+                  >
+                    💾<br />Backup
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Monitoring Tab */}
         {activeTab === 'monitoring' && (
           <div className="bg-gray-800 p-6 rounded-lg">
@@ -1021,6 +1430,162 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
                   📤 Export CSV
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Content Creation/Edit Modal */}
+        {showContentModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-slate-800 p-8 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="text-center mb-6">
+                <div className="text-4xl mb-2">
+                  {contentModalType === 'course' ? '🎓' : 
+                   contentModalType === 'video' ? '🎥' : 
+                   contentModalType === 'stream' ? '📡' : '📚'}
+                </div>
+                <h2 className="text-2xl font-bold text-white">
+                  {editingContent ? 'Edit' : 'Create'} {contentModalType.charAt(0).toUpperCase() + contentModalType.slice(1)}
+                </h2>
+              </div>
+
+              <form className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Title</label>
+                  <input
+                    type="text"
+                    defaultValue={editingContent?.title || ''}
+                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter title"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                  <textarea
+                    defaultValue={editingContent?.description || ''}
+                    rows={3}
+                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter description"
+                  />
+                </div>
+
+                {contentModalType === 'course' && (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Price</label>
+                        <input
+                          type="text"
+                          defaultValue={editingContent?.price || ''}
+                          className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="e.g., $99 or Free"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Duration</label>
+                        <input
+                          type="text"
+                          defaultValue={editingContent?.duration || ''}
+                          className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="e.g., 8 hours"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Number of Lessons</label>
+                      <input
+                        type="number"
+                        defaultValue={editingContent?.lessons || ''}
+                        className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter number of lessons"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {contentModalType === 'video' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Video File</label>
+                      <div className="border-2 border-dashed border-slate-600 rounded-lg p-6 text-center">
+                        <div className="text-4xl mb-2">📁</div>
+                        <p className="text-gray-400 mb-2">Drag and drop video file here</p>
+                        <button type="button" className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors">
+                          Choose File
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Thumbnail</label>
+                      <div className="border-2 border-dashed border-slate-600 rounded-lg p-4 text-center">
+                        <p className="text-gray-400 mb-2">Upload thumbnail image</p>
+                        <button type="button" className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg transition-colors">
+                          Choose Image
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {contentModalType === 'stream' && (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Scheduled Date</label>
+                        <input
+                          type="datetime-local"
+                          defaultValue={editingContent?.scheduledDate ? new Date(editingContent.scheduledDate).toISOString().slice(0, 16) : ''}
+                          className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Duration (minutes)</label>
+                        <input
+                          type="number"
+                          defaultValue={editingContent?.duration ? parseInt(editingContent.duration) : ''}
+                          className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="60"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Stream Platform</label>
+                      <select className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option>YouTube Live</option>
+                        <option>Twitch</option>
+                        <option>Facebook Live</option>
+                        <option>Custom Platform</option>
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowContentModal(false);
+                      setEditingContent(null);
+                    }}
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 rounded-lg font-semibold transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      addLog(`${editingContent ? 'Updated' : 'Created'} ${contentModalType} successfully`, 'success');
+                      setShowContentModal(false);
+                      setEditingContent(null);
+                    }}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition-colors"
+                  >
+                    {editingContent ? 'Update' : 'Create'} {contentModalType.charAt(0).toUpperCase() + contentModalType.slice(1)}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
