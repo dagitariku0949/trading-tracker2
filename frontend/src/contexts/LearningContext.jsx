@@ -27,6 +27,111 @@ export const LearningProvider = ({ children }) => {
     loadLearningContent();
   }, []);
 
+  // FORCE OVERRIDE: Always use hardcoded content regardless of any API calls
+  useEffect(() => {
+    const forceHardcodedContent = {
+      _version: '2024-12-11-force-override',
+      _source: 'hardcoded-override',
+      courses: [
+        {
+          id: 1,
+          title: "Complete Forex Trading Mastery",
+          description: "Master the fundamentals of forex trading from beginner to advanced level",
+          duration: "12 hours",
+          lessons: 24,
+          level: "Beginner to Advanced",
+          price: "Free",
+          thumbnail: "🎓",
+          topics: ["Market Analysis", "Risk Management", "Trading Psychology", "Technical Analysis"],
+          status: "Published",
+          students: 156,
+          created_at: "2024-01-15T00:00:00Z",
+          updated_at: "2024-01-15T00:00:00Z"
+        },
+        {
+          id: 2,
+          title: "Advanced Price Action Strategies",
+          description: "Learn professional price action techniques used by institutional traders",
+          duration: "8 hours",
+          lessons: 16,
+          level: "Intermediate",
+          price: "$99",
+          thumbnail: "📊",
+          topics: ["Support & Resistance", "Candlestick Patterns", "Market Structure", "Entry Strategies"],
+          status: "Published",
+          students: 89,
+          created_at: "2024-02-10T00:00:00Z",
+          updated_at: "2024-02-10T00:00:00Z"
+        },
+        {
+          id: 3,
+          title: "Trading Psychology Mastery",
+          description: "Develop the mental discipline required for consistent trading success",
+          duration: "6 hours",
+          lessons: 12,
+          level: "All Levels",
+          price: "$79",
+          thumbnail: "🧠",
+          topics: ["Emotional Control", "Discipline", "Risk Psychology", "Mindset Development"],
+          status: "Published",
+          students: 67,
+          created_at: "2024-03-01T00:00:00Z",
+          updated_at: "2024-03-01T00:00:00Z"
+        }
+      ],
+      videos: [
+        {
+          id: 1,
+          title: "How to Identify High Probability Setups",
+          description: "Learn the key factors that make a trading setup high probability",
+          duration: "15:30",
+          views: 12500,
+          category: "Technical Analysis",
+          thumbnail: "🎯",
+          video_url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+          status: "Published",
+          likes: 890,
+          upload_date: "2024-03-01T00:00:00Z",
+          created_at: "2024-03-01T00:00:00Z",
+          updated_at: "2024-03-01T00:00:00Z"
+        }
+      ],
+      liveStreams: [
+        {
+          id: 1,
+          title: "Weekly Market Analysis",
+          description: "Live analysis of current market conditions",
+          scheduled_date: "2024-12-15T15:00:00Z",
+          duration: "60 minutes",
+          registrations: 45,
+          status: "Scheduled",
+          created_at: "2024-12-01T00:00:00Z",
+          updated_at: "2024-12-01T00:00:00Z"
+        }
+      ],
+      resources: [
+        {
+          id: 1,
+          title: "Trading Journal Template",
+          description: "Professional Excel template for tracking your trades",
+          type: "Download",
+          format: "Excel (.xlsx)",
+          size: "2.5 MB",
+          icon: "📊",
+          status: "Published",
+          downloads: 234,
+          upload_date: "2024-02-20T00:00:00Z",
+          created_at: "2024-02-20T00:00:00Z",
+          updated_at: "2024-02-20T00:00:00Z"
+        }
+      ]
+    };
+
+    console.log('🔴 FORCE OVERRIDE: Setting hardcoded content regardless of API');
+    setLearningContent(forceHardcodedContent);
+    setLoading(false);
+  }, []); // This will override any API content
+
   const loadLearningContent = async () => {
     try {
       setLoading(true);
@@ -175,8 +280,10 @@ export const LearningProvider = ({ children }) => {
     return published;
   };
 
-  // Admin functions for managing content
+  // DISABLED: Admin functions for managing content (using hardcoded content)
   const addContent = async (type, content) => {
+    console.log('🔴 ADMIN FUNCTIONS DISABLED - Using hardcoded content');
+    return null;
     try {
       // Try API first
       try {
@@ -239,6 +346,8 @@ export const LearningProvider = ({ children }) => {
   };
 
   const updateContent = async (type, id, updates) => {
+    console.log('🔴 UPDATE DISABLED - Using hardcoded content');
+    return null;
     try {
       // Try API first
       try {
@@ -292,6 +401,8 @@ export const LearningProvider = ({ children }) => {
   };
 
   const deleteContent = async (type, id) => {
+    console.log('🔴 DELETE DISABLED - Using hardcoded content');
+    return null;
     try {
       // Try API first
       try {
