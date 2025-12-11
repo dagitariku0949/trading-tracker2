@@ -18,7 +18,7 @@ import PositionCalculator from './components/PositionCalculator'
 import AdminPanel from './components/AdminPanel'
 import AdminLogin from './components/AdminLogin'
 import UserLogin from './components/UserLogin'
-import LearningHub from './components/LearningHub'
+import LearningHub from './components/LearningHubSimple'
 import { LearningProvider } from './contexts/LearningContext'
 
 export default function App(){
@@ -316,14 +316,12 @@ export default function App(){
 
   if (showLearning) {
     return (
-      <LearningProvider>
-        <LearningHub 
-          onBack={() => {
-            setShowLearning(false)
-            setShowLanding(true)
-          }}
-        />
-      </LearningProvider>
+      <LearningHub 
+        onBack={() => {
+          setShowLearning(false)
+          setShowLanding(true)
+        }}
+      />
     )
   }
 
