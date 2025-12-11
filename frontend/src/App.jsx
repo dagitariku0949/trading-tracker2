@@ -79,12 +79,6 @@ export default function App(){
   useEffect(() => {
     // Check if user is already authenticated
     checkUserAuthentication()
-    
-    // Check if URL contains showadmin=true to show Owner button
-    const urlParams = new URLSearchParams(window.location.search)
-    if (urlParams.get('showadmin') === 'true') {
-      document.body.setAttribute('data-show-admin', 'true')
-    }
   }, [])
 
   useEffect(() => {
@@ -347,11 +341,6 @@ export default function App(){
 
   return (
     <LearningProvider>
-      {/* BIG RED BANNER TO IDENTIFY VERSION */}
-      <div className="bg-red-600 text-white p-4 text-center text-xl font-bold">
-        🚨 UPDATED VERSION - NO OWNER BUTTON - VERSION 2024-12-11 🚨
-      </div>
-      
       <div className="min-h-screen bg-slate-900 text-white p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -364,7 +353,7 @@ export default function App(){
               LEAP
             </button>
             <div className="h-6 w-px bg-slate-700"></div>
-            <h1 className="text-2xl font-semibold text-slate-300">Trading Dashboard - NO ADMIN BUTTON</h1>
+            <h1 className="text-2xl font-semibold text-slate-300">Trading Dashboard</h1>
             {currentUser && (
               <>
                 <div className="h-6 w-px bg-slate-700"></div>
@@ -375,7 +364,6 @@ export default function App(){
             )}
           </div>
           <div className="flex gap-3">
-            {/* CLEAN VERSION - NO ADMIN BUTTON */}
             <button
               onClick={() => setShowLearning(true)}
               className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-semibold transition relative"
