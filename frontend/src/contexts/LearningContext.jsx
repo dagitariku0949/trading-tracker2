@@ -32,30 +32,43 @@ export const LearningProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      // Try to load from localStorage first
-      const savedContent = localStorage.getItem('learningContent');
-      if (savedContent) {
-        const parsed = JSON.parse(savedContent);
-        setLearningContent(parsed);
-        setLoading(false);
-        return;
-      }
-      
-      // Try API if no local content
+      // Always try API first for fresh content
       try {
+        console.log('Fetching from API:', `${API_BASE_URL}/api/learning`);
         const response = await fetch(`${API_BASE_URL}/api/learning`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        
         const result = await response.json();
         
-        if (result.success) {
+        if (result.success && result.data) {
           setLearningContent(result.data);
           localStorage.setItem('learningContent', JSON.stringify(result.data));
-          console.log('Learning content loaded from API');
+          console.log('Learning content loaded from API successfully');
+          return;
         } else {
-          throw new Error('API failed');
+          throw new Error('Invalid API response');
         }
       } catch (apiError) {
-        console.log('API not available, using default content');
-        // Use default content if API fails
+        console.log('API failed:', apiError.message);
+        
+        // Fallback to localStorage
+        const savedContent = localStorage.getItem('learningContent');
+        if (savedContent) {
+          try {
+            const parsed = JSON.parse(savedContent);
+            setLearningContent(parsed);
+            console.log('Learning content loaded from localStorage');
+            return;
+          } catch (parseError) {
+            console.log('localStorage parse failed');
+          }
+        }
+        
+        // Final fallback to default content
+        console.log('Using default content');
         const defaultContent = {
           courses: [
             {
@@ -85,6 +98,20 @@ export const LearningProvider = ({ children }) => {
               status: "Published",
               students: 89,
               createdAt: "2024-02-10"
+            },
+            {
+              id: 3,
+              title: "Trading Psychology Mastery",
+              description: "Develop the mental discipline required for consistent trading success",
+              duration: "6 hours",
+              lessons: 12,
+              level: "All Levels",
+              price: "$79",
+              thumbnail: "🧠",
+              topics: ["Emotional Control", "Discipline", "Risk Psychology", "Mindset Development"],
+              status: "Published",
+              students: 67,
+              createdAt: "2024-03-01"
             }
           ],
           videos: [
@@ -100,6 +127,19 @@ export const LearningProvider = ({ children }) => {
               status: "Published",
               likes: 890,
               uploadDate: "2024-03-01"
+            },
+            {
+              id: 2,
+              title: "Risk Management: The Key to Long-term Success",
+              description: "Master the art of risk management and position sizing",
+              duration: "22:15",
+              views: "8.9K",
+              category: "Risk Management",
+              thumbnail: "⚖️",
+              videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+              status: "Published",
+              likes: 654,
+              uploadDate: "2024-03-05"
             }
           ],
           liveStreams: [
@@ -154,47 +194,60 @@ export const LearningProvider = ({ children }) => {
   // Admin functions for managing content
   const addContent = async (type, content) => {
     try {
-      const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
-      const newContent = {
-        ...content,
-        id: Date.now(),
-        status: content.status || 'Published',
-        createdAt: new Date().toISOString(),
-        students: type === 'course' ? 0 : undefined,
-        views: type === 'video' ? 0 : undefined,
-        likes: type === 'video' ? 0 : undefined,
-        downloads: type === 'resource' ? 0 : undefined,
-        registrations: type === 'stream' ? 0 : undefined
-      };
-
-      // Update local state immediately
-      const updatedContent = {
-        ...learningContent,
-        [contentType]: [...learningContent[contentType], newContent]
-      };
-      
-      setLearningContent(updatedContent);
-      localStorage.setItem('learningContent', JSON.stringify(updatedContent));
-      
-      // Try to sync with API in background
+      // Try API first
       try {
         const response = await fetch(`${API_BASE_URL}/api/learning`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ type, content: newContent })
+          body: JSON.stringify({ type, content })
         });
         
         if (response.ok) {
-          console.log('Content synced with API');
+          const result = await response.json();
+          if (result.success) {
+            // Update local state with API response
+            const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
+            const updatedContent = {
+              ...learningContent,
+              [contentType]: [...learningContent[contentType], result.data]
+            };
+            
+            setLearningContent(updatedContent);
+            localStorage.setItem('learningContent', JSON.stringify(updatedContent));
+            console.log('Content added via API:', result.data);
+            return result.data;
+          }
         }
+        throw new Error('API call failed');
       } catch (apiError) {
-        console.log('API sync failed, content saved locally');
+        console.log('API failed, adding locally:', apiError.message);
+        
+        // Fallback to local storage
+        const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
+        const newContent = {
+          ...content,
+          id: Date.now(),
+          status: content.status || 'Published',
+          createdAt: new Date().toISOString(),
+          students: type === 'course' ? 0 : undefined,
+          views: type === 'video' ? 0 : undefined,
+          likes: type === 'video' ? 0 : undefined,
+          downloads: type === 'resource' ? 0 : undefined,
+          registrations: type === 'stream' ? 0 : undefined
+        };
+
+        const updatedContent = {
+          ...learningContent,
+          [contentType]: [...learningContent[contentType], newContent]
+        };
+        
+        setLearningContent(updatedContent);
+        localStorage.setItem('learningContent', JSON.stringify(updatedContent));
+        console.log('Content added locally:', newContent);
+        return newContent;
       }
-      
-      console.log('Added content:', newContent);
-      return newContent;
     } catch (error) {
       console.error('Error adding content:', error);
       throw error;
@@ -203,20 +256,7 @@ export const LearningProvider = ({ children }) => {
 
   const updateContent = async (type, id, updates) => {
     try {
-      const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
-      
-      // Update local state immediately
-      const updatedContent = {
-        ...learningContent,
-        [contentType]: learningContent[contentType].map(item =>
-          item.id === id ? { ...item, ...updates, updatedAt: new Date().toISOString() } : item
-        )
-      };
-      
-      setLearningContent(updatedContent);
-      localStorage.setItem('learningContent', JSON.stringify(updatedContent));
-      
-      // Try to sync with API in background
+      // Try API first
       try {
         const response = await fetch(`${API_BASE_URL}/api/learning`, {
           method: 'PUT',
@@ -227,13 +267,40 @@ export const LearningProvider = ({ children }) => {
         });
         
         if (response.ok) {
-          console.log('Content synced with API');
+          const result = await response.json();
+          if (result.success) {
+            // Update local state with API response
+            const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
+            const updatedContent = {
+              ...learningContent,
+              [contentType]: learningContent[contentType].map(item =>
+                item.id === id ? result.data : item
+              )
+            };
+            
+            setLearningContent(updatedContent);
+            localStorage.setItem('learningContent', JSON.stringify(updatedContent));
+            console.log('Content updated via API:', result.data);
+            return;
+          }
         }
+        throw new Error('API call failed');
       } catch (apiError) {
-        console.log('API sync failed, content saved locally');
+        console.log('API failed, updating locally:', apiError.message);
+        
+        // Fallback to local update
+        const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
+        const updatedContent = {
+          ...learningContent,
+          [contentType]: learningContent[contentType].map(item =>
+            item.id === id ? { ...item, ...updates, updatedAt: new Date().toISOString() } : item
+          )
+        };
+        
+        setLearningContent(updatedContent);
+        localStorage.setItem('learningContent', JSON.stringify(updatedContent));
+        console.log('Content updated locally:', { type, id, updates });
       }
-      
-      console.log('Updated content:', { type, id, updates });
     } catch (error) {
       console.error('Error updating content:', error);
       throw error;
@@ -242,31 +309,43 @@ export const LearningProvider = ({ children }) => {
 
   const deleteContent = async (type, id) => {
     try {
-      const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
-      
-      // Update local state immediately
-      const updatedContent = {
-        ...learningContent,
-        [contentType]: learningContent[contentType].filter(item => item.id !== id)
-      };
-      
-      setLearningContent(updatedContent);
-      localStorage.setItem('learningContent', JSON.stringify(updatedContent));
-      
-      // Try to sync with API in background
+      // Try API first
       try {
         const response = await fetch(`${API_BASE_URL}/api/learning?type=${type}&id=${id}`, {
           method: 'DELETE'
         });
         
         if (response.ok) {
-          console.log('Content synced with API');
+          const result = await response.json();
+          if (result.success) {
+            // Update local state
+            const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
+            const updatedContent = {
+              ...learningContent,
+              [contentType]: learningContent[contentType].filter(item => item.id !== id)
+            };
+            
+            setLearningContent(updatedContent);
+            localStorage.setItem('learningContent', JSON.stringify(updatedContent));
+            console.log('Content deleted via API:', { type, id });
+            return;
+          }
         }
+        throw new Error('API call failed');
       } catch (apiError) {
-        console.log('API sync failed, content saved locally');
+        console.log('API failed, deleting locally:', apiError.message);
+        
+        // Fallback to local delete
+        const contentType = type === 'stream' ? 'liveStreams' : `${type}s`;
+        const updatedContent = {
+          ...learningContent,
+          [contentType]: learningContent[contentType].filter(item => item.id !== id)
+        };
+        
+        setLearningContent(updatedContent);
+        localStorage.setItem('learningContent', JSON.stringify(updatedContent));
+        console.log('Content deleted locally:', { type, id });
       }
-      
-      console.log('Deleted content:', { type, id });
     } catch (error) {
       console.error('Error deleting content:', error);
       throw error;
