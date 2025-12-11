@@ -32,6 +32,23 @@ export default function App(){
   
   // Check if this is admin mode based on URL
   const [isAdminMode, setIsAdminMode] = useState(false)
+  
+  // Secret keyboard shortcut for admin access (Ctrl+Shift+A)
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      if (event.ctrlKey && event.shiftKey && event.key === 'A') {
+        console.log('🔧 Secret admin shortcut activated!');
+        setIsAdminMode(true);
+        setShowLanding(false);
+        setShowAdminLogin(true);
+        // Update URL to show admin mode
+        window.history.pushState({}, '', window.location.pathname + '?admin=true');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [])
   const [activeTab, setActiveTab] = useState('overview')
   const [showImport, setShowImport] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -78,9 +95,22 @@ export default function App(){
   }
 
   useEffect(() => {
+    // DEBUG: Log current URL info
+    console.log('🔍 URL Debug Info:');
+    console.log('- Full URL:', window.location.href);
+    console.log('- Search params:', window.location.search);
+    console.log('- Pathname:', window.location.pathname);
+    
     // Check if URL contains admin parameter
     const urlParams = new URLSearchParams(window.location.search)
-    const isAdmin = urlParams.get('admin') === 'true' || window.location.pathname.includes('/admin')
+    const adminParam = urlParams.get('admin')
+    const isAdminPath = window.location.pathname.includes('/admin')
+    const isAdmin = adminParam === 'true' || isAdminPath
+    
+    console.log('🔍 Admin Detection:');
+    console.log('- Admin param:', adminParam);
+    console.log('- Admin path:', isAdminPath);
+    console.log('- Is Admin Mode:', isAdmin);
     
     if (isAdmin) {
       setIsAdminMode(true)
@@ -403,6 +433,13 @@ export default function App(){
 
   return (
     <LearningProvider>
+      {/* DEBUG: Show URL info for troubleshooting */}
+      <div className="fixed top-0 right-0 bg-red-600 text-white p-2 text-xs z-50 max-w-xs">
+        <div>URL: {window.location.href}</div>
+        <div>Admin Mode: {isAdminMode ? 'YES' : 'NO'}</div>
+        <div>Press Ctrl+Shift+A for admin</div>
+      </div>
+      
       <div className="min-h-screen bg-slate-900 text-white p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
