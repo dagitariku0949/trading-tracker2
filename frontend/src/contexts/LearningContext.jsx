@@ -32,7 +32,7 @@ export const LearningProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      const response = await fetch(`${API_BASE_URL}/api/learning/content`);
+      const response = await fetch(`${API_BASE_URL}/api/learning`);
       const result = await response.json();
       
       if (result.success) {
@@ -87,18 +87,12 @@ export const LearningProvider = ({ children }) => {
   // Admin functions for managing content
   const addContent = async (type, content) => {
     try {
-      const ownerToken = localStorage.getItem('ownerToken');
-      if (!ownerToken) {
-        throw new Error('Owner authentication required');
-      }
-
-      const response = await fetch(`${API_BASE_URL}/api/learning/content/${type}`, {
+      const response = await fetch(`${API_BASE_URL}/api/learning`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${ownerToken}`
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(content)
+        body: JSON.stringify({ type, content })
       });
 
       const result = await response.json();
@@ -123,18 +117,12 @@ export const LearningProvider = ({ children }) => {
 
   const updateContent = async (type, id, updates) => {
     try {
-      const ownerToken = localStorage.getItem('ownerToken');
-      if (!ownerToken) {
-        throw new Error('Owner authentication required');
-      }
-
-      const response = await fetch(`${API_BASE_URL}/api/learning/content/${type}/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/learning`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${ownerToken}`
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(updates)
+        body: JSON.stringify({ type, id, updates })
       });
 
       const result = await response.json();
@@ -160,16 +148,8 @@ export const LearningProvider = ({ children }) => {
 
   const deleteContent = async (type, id) => {
     try {
-      const ownerToken = localStorage.getItem('ownerToken');
-      if (!ownerToken) {
-        throw new Error('Owner authentication required');
-      }
-
-      const response = await fetch(`${API_BASE_URL}/api/learning/content/${type}/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${ownerToken}`
-        }
+      const response = await fetch(`${API_BASE_URL}/api/learning?type=${type}&id=${id}`, {
+        method: 'DELETE'
       });
 
       const result = await response.json();
