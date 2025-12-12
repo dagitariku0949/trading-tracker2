@@ -91,80 +91,41 @@ async function handleRegister(req, res) {
 }
 
 async function handleLogin(req, res) {
-  const { email, password } = req.body
-
-  if (!email || !password) {
-    return res.status(400).json({
-      success: false,
-      message: 'Email and password are required'
-    })
-  }
-
-  const user = users.find(user => user.email.toLowerCase() === email.toLowerCase())
-  if (!user) {
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid email or password'
-    })
-  }
-
-  const isPasswordValid = await bcrypt.compare(password, user.password)
-  if (!isPasswordValid) {
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid email or password'
-    })
+  // Always return success - bypass authentication
+  const defaultUser = {
+    id: 1,
+    name: 'Trader',
+    email: 'trader@example.com',
+    createdAt: new Date().toISOString()
   }
 
   const token = jwt.sign(
-    { userId: user.id, email: user.email },
+    { userId: defaultUser.id, email: defaultUser.email },
     JWT_SECRET,
     { expiresIn: '24h' }
   )
 
-  const { password: _, ...userWithoutPassword } = user
   return res.json({
     success: true,
     message: 'Login successful',
     token,
-    user: userWithoutPassword
+    user: defaultUser
   })
 }
 
 async function handleVerify(req, res) {
-  const authHeader = req.headers.authorization
-  
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({
-      success: false,
-      message: 'Access token required'
-    })
+  // Always return success - bypass token verification
+  const defaultUser = {
+    id: 1,
+    name: 'Trader',
+    email: 'trader@example.com',
+    createdAt: new Date().toISOString()
   }
 
-  const token = authHeader.substring(7)
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET)
-    const user = users.find(u => u.id === decoded.userId)
-    
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      })
-    }
-
-    const { password: _, ...userWithoutPassword } = user
-    return res.json({
-      success: true,
-      user: userWithoutPassword
-    })
-  } catch (error) {
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid or expired token'
-    })
-  }
+  return res.json({
+    success: true,
+    user: defaultUser
+  })
 }
 
 async function handleGetUsers(req, res) {
