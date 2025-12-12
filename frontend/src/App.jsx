@@ -248,12 +248,9 @@ export default function App(){
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => setShowLanding(true)}
-              className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent hover:from-emerald-300 hover:to-blue-300 transition-all"
-            >
+            <div className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent">
               LEAP
-            </button>
+            </div>
             <div className="h-6 w-px bg-slate-700"></div>
             <h1 className="text-2xl font-semibold text-slate-300">Trading Dashboard</h1>
             {currentUser && (
