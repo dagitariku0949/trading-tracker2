@@ -22,9 +22,9 @@ import LearningHub from './components/LearningHubSimple'
 import { LearningProvider } from './contexts/LearningContext'
 
 export default function App(){
-  const [isUserAuthenticated, setIsUserAuthenticated] = useState(false)
-  const [currentUser, setCurrentUser] = useState(null)
-  const [showLanding, setShowLanding] = useState(true)
+  const [isUserAuthenticated, setIsUserAuthenticated] = useState(true)
+  const [currentUser, setCurrentUser] = useState({ name: 'Trader', email: 'trader@example.com' })
+  const [showLanding, setShowLanding] = useState(false)
   const [showLearning, setShowLearning] = useState(false)
   const [showAdmin, setShowAdmin] = useState(false)
   const [showAdminLogin, setShowAdminLogin] = useState(false)
