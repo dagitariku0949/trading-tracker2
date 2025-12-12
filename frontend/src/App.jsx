@@ -13,22 +13,16 @@ import AdvancedMetrics from './components/AdvancedMetrics'
 import SettingsModal from './components/SettingsModal'
 import TradeJournal from './components/TradeJournal'
 import AfterTradeForm from './components/AfterTradeForm'
-import LandingPage from './components/LandingPage'
 import PositionCalculator from './components/PositionCalculator'
-import AdminPanel from './components/AdminPanel'
-import AdminLogin from './components/AdminLogin'
-import UserLogin from './components/UserLogin'
 import LearningHub from './components/LearningHubSimple'
 import { LearningProvider } from './contexts/LearningContext'
 
 export default function App(){
+  // FORCE AUTHENTICATION - NO LOGIN SYSTEM
   const [isUserAuthenticated, setIsUserAuthenticated] = useState(true)
   const [currentUser, setCurrentUser] = useState({ name: 'Trader', email: 'trader@example.com' })
   const [showLanding, setShowLanding] = useState(false)
   const [showLearning, setShowLearning] = useState(false)
-  const [showAdmin, setShowAdmin] = useState(false)
-  const [showAdminLogin, setShowAdminLogin] = useState(false)
-  const [isOwnerAuthenticated, setIsOwnerAuthenticated] = useState(false)
   
 
   const [activeTab, setActiveTab] = useState('overview')
@@ -77,87 +71,37 @@ export default function App(){
   }
 
   useEffect(() => {
-    // Check if user is already authenticated
-    checkUserAuthentication()
-  }, [])
-
-  useEffect(() => {
-    // Only load data if user is authenticated
-    if (isUserAuthenticated) {
-      // Load starting balance from localStorage first
-      const savedBalance = localStorage.getItem('startingBalance')
-      if (savedBalance) {
-        setStartingBalance(parseFloat(savedBalance))
-      }
-      
-      // Check if owner is already authenticated
-      checkOwnerAuthentication()
-      
-      // Request notification permission
-      const initNotifications = async () => {
-        const { requestNotificationPermission } = await import('./utils/notifications')
-        await requestNotificationPermission()
-      }
-      initNotifications()
-      
-      fetchData()
-    }
-  }, [isUserAuthenticated])
-
-  const checkUserAuthentication = async () => {
-    // Always authenticate - bypass login system
+    // FORCE AUTHENTICATION - NO CHECKS
     const defaultUser = { name: 'Trader', email: 'trader@example.com' }
     setCurrentUser(defaultUser)
     setIsUserAuthenticated(true)
     localStorage.setItem('userToken', 'auto-authenticated')
     localStorage.setItem('userData', JSON.stringify(defaultUser))
-    setLoading(false)
-  }
-
-  const handleUserLogin = (user) => {
-    setCurrentUser(user)
-    setIsUserAuthenticated(true)
-  }
-
-  const handleUserLogout = () => {
-    localStorage.removeItem('userToken')
-    localStorage.removeItem('userData')
-    setCurrentUser(null)
-    setIsUserAuthenticated(false)
-    setShowAdmin(false)
-    setIsOwnerAuthenticated(false)
-  }
-
-  const checkOwnerAuthentication = () => {
-    const authToken = sessionStorage.getItem('ownerAuthToken')
-    const authTime = sessionStorage.getItem('ownerAuthTime')
     
-    if (authToken && authTime) {
-      const timeDiff = Date.now() - parseInt(authTime)
-      // Session expires after 2 hours
-      if (timeDiff < 2 * 60 * 60 * 1000) {
-        setIsOwnerAuthenticated(true)
-      } else {
-        // Clear expired session
-        sessionStorage.removeItem('ownerAuthToken')
-        sessionStorage.removeItem('ownerAuthTime')
+    // Load starting balance from localStorage first
+    const savedBalance = localStorage.getItem('startingBalance')
+    if (savedBalance) {
+      setStartingBalance(parseFloat(savedBalance))
+    }
+    
+    // Request notification permission
+    const initNotifications = async () => {
+      try {
+        const { requestNotificationPermission } = await import('./utils/notifications')
+        await requestNotificationPermission()
+      } catch (e) {
+        console.log('Notifications not available')
       }
     }
-  }
+    initNotifications()
+    
+    fetchData()
+    setLoading(false)
+  }, [])
 
-  const handleOwnerLogin = () => {
-    setIsOwnerAuthenticated(true)
-    setShowAdminLogin(false)
-    setShowAdmin(true)
-  }
-
-
-
-  const handleLogout = () => {
-    sessionStorage.removeItem('ownerAuthToken')
-    sessionStorage.removeItem('ownerAuthTime')
-    setIsOwnerAuthenticated(false)
-    setShowAdmin(false)
+  const handleUserLogout = () => {
+    // Just refresh the page - no actual logout
+    window.location.reload()
   }
 
   useEffect(() => {
@@ -265,51 +209,7 @@ export default function App(){
 
 
 
-  // Auto-authenticate user (bypass login)
-  useEffect(() => {
-    if (!isUserAuthenticated) {
-      // Auto-login with default user
-      const defaultUser = { name: 'Trader', email: 'trader@example.com' }
-      setCurrentUser(defaultUser)
-      setIsUserAuthenticated(true)
-      localStorage.setItem('userToken', 'auto-authenticated')
-      localStorage.setItem('userData', JSON.stringify(defaultUser))
-    }
-  }, [isUserAuthenticated])
-
-  // Skip user login - direct access
-  // if (!isUserAuthenticated) {
-  //   return (
-  //     <LearningProvider>
-  //       <UserLogin onLogin={handleUserLogin} />
-  //     </LearningProvider>
-  //   )
-  // }
-
-  if (showLanding) {
-    return (
-      <LearningProvider>
-        <LandingPage 
-          onEnter={() => setShowLanding(false)}
-          onNavigate={(tab) => {
-            console.log('App.jsx: onNavigate called with tab:', tab);
-            console.log('App.jsx: Current showLearning state:', showLearning);
-            console.log('App.jsx: Current showLanding state:', showLanding);
-            
-            if (tab === 'learning') {
-              console.log('App.jsx: Setting showLearning to true');
-              setShowLearning(true)
-              setShowLanding(false)
-            } else {
-              console.log('App.jsx: Setting activeTab to:', tab);
-              setActiveTab(tab)
-              setShowLanding(false)
-            }
-          }}
-        />
-      </LearningProvider>
-    )
-  }
+  // NO LOGIN OR LANDING PAGE - DIRECT TO DASHBOARD
 
   if (showLearning) {
     console.log('RENDERING LEARNING HUB - showLearning is true');
