@@ -105,33 +105,12 @@ export default function App(){
   }, [isUserAuthenticated])
 
   const checkUserAuthentication = async () => {
-    const token = localStorage.getItem('userToken')
-    const userData = localStorage.getItem('userData')
-    
-    if (token && userData) {
-      try {
-        // Verify token with backend
-        const response = await fetch('http://localhost:4000/api/auth/verify', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-        
-        if (response.ok) {
-          const data = await response.json()
-          setCurrentUser(data.user)
-          setIsUserAuthenticated(true)
-        } else {
-          // Token invalid, clear storage
-          localStorage.removeItem('userToken')
-          localStorage.removeItem('userData')
-        }
-      } catch (error) {
-        console.error('Auth verification failed:', error)
-        localStorage.removeItem('userToken')
-        localStorage.removeItem('userData')
-      }
-    }
+    // Always authenticate - bypass login system
+    const defaultUser = { name: 'Trader', email: 'trader@example.com' }
+    setCurrentUser(defaultUser)
+    setIsUserAuthenticated(true)
+    localStorage.setItem('userToken', 'auto-authenticated')
+    localStorage.setItem('userData', JSON.stringify(defaultUser))
     setLoading(false)
   }
 
@@ -286,14 +265,26 @@ export default function App(){
 
 
 
-  // Show user login if not authenticated
-  if (!isUserAuthenticated) {
-    return (
-      <LearningProvider>
-        <UserLogin onLogin={handleUserLogin} />
-      </LearningProvider>
-    )
-  }
+  // Auto-authenticate user (bypass login)
+  useEffect(() => {
+    if (!isUserAuthenticated) {
+      // Auto-login with default user
+      const defaultUser = { name: 'Trader', email: 'trader@example.com' }
+      setCurrentUser(defaultUser)
+      setIsUserAuthenticated(true)
+      localStorage.setItem('userToken', 'auto-authenticated')
+      localStorage.setItem('userData', JSON.stringify(defaultUser))
+    }
+  }, [isUserAuthenticated])
+
+  // Skip user login - direct access
+  // if (!isUserAuthenticated) {
+  //   return (
+  //     <LearningProvider>
+  //       <UserLogin onLogin={handleUserLogin} />
+  //     </LearningProvider>
+  //   )
+  // }
 
   if (showLanding) {
     return (
