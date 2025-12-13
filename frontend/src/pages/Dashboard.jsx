@@ -113,11 +113,16 @@ export default function Dashboard(){
     }
   }, [trades])
 
-  // Hidden admin access - Press Ctrl+Shift+A
+  // Hidden admin access - Press Ctrl+Shift+A with password
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.ctrlKey && e.shiftKey && e.key === 'A') {
-        setShowAdmin(true)
+        const password = prompt('Enter admin password:')
+        if (password === 'LEAP2024Admin!') {
+          setShowAdmin(true)
+        } else if (password !== null) {
+          alert('Invalid password')
+        }
       }
     }
     window.addEventListener('keydown', handleKeyPress)
