@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import api from '../api/client'
+import { useAuth } from '../contexts/AuthContext'
 import ConfluenceCard from '../components/ConfluenceCard'
 import CalendarHeatmap from '../components/CalendarHeatmap'
 import MetricsGrid from '../components/MetricsGrid'
@@ -18,7 +19,7 @@ import LearningHub from '../components/LearningHubSimple'
 import AdminPanel from '../components/AdminPanel'
 
 export default function Dashboard(){
-  const [currentUser, setCurrentUser] = useState({ name: 'Trader', email: 'trader@example.com' })
+  const { user, logout, isAdmin } = useAuth()
   const [showLearning, setShowLearning] = useState(false)
   const [showAdmin, setShowAdmin] = useState(false)
   

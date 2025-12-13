@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useLearning } from '../contexts/LearningContext';
+import { useAuth } from '../contexts/AuthContext';
+import UserManagementTab from './UserManagementTab';
 
 const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) => {
+  const { user, logout, getUsers, updateUser, deleteUser, resetUserPassword } = useAuth();
   let learningContent, addContent, updateContent, deleteContent, publishContent, unpublishContent, resetToDefaults;
   
   try {
@@ -660,49 +663,15 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
 
         {/* Users Tab */}
         {activeTab === 'users' && (
-          <div>
-            <h2 className="text-2xl font-bold mb-6">User Management</h2>
-            
-            <div className="bg-gray-800 p-6 rounded-lg mb-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">Registered Users ({users.length})</h3>
-                <div className="flex gap-2">
-                  <button
-                    onClick={async () => {
-                      addLog(`🧪 Testing video creation...`, 'info');
-                      
-                      try {
-                        // Create a simple test video
-                        const testVideo = {
-                          title: `Test Video ${Date.now()}`,
-                          description: 'Quick test video creation',
-                          duration: '3:00',
-                          category: 'Technical Analysis',
-                          thumbnail: '🧪',
-                          video_url: 'https://www.youtube.com/embed/jNQXAC9IVRw',
-                          status: 'Published'
-                        };
-                        
-                        await addContent('video', testVideo);
-                        addLog(`✅ Test video created successfully!`, 'success');
-                        addLog(`📺 Go to Learning Hub and click "Force Refresh" to see it`, 'info');
-                        
-                      } catch (error) {
-                        addLog(`❌ Test video creation failed: ${error.message}`, 'error');
-                      }
-                    }}
-                    className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded-lg transition-colors"
-                  >
-                    🧪 Quick Test Video
-                  </button>
-                  <button
-                    onClick={loadUsers}
-                    className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors"
-                  >
-                    🔄 Refresh
-                  </button>
-                </div>
-              </div>
+          <UserManagementTab 
+            getUsers={getUsers}
+            updateUser={updateUser}
+            deleteUser={deleteUser}
+            resetUserPassword={resetUserPassword}
+            addLog={addLog}
+            currentUser={user}
+          />
+        )}
               
               {users.length === 0 ? (
                 <div className="text-center py-8 text-gray-400">
