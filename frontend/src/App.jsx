@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard'
 import AdminPage from './pages/AdminPage'
 
 export default function App() {
+  console.log('App component loaded - HashRouter active')
   return (
     <Router>
       <Routes>

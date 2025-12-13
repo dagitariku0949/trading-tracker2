@@ -4,6 +4,7 @@ import AdminPanel from '../components/AdminPanel'
 import { LearningProvider } from '../contexts/LearningContext'
 
 export default function AdminPage() {
+  console.log('AdminPage component loaded!')
   const [trades, setTrades] = useState([])
   const [metrics, setMetrics] = useState(null)
   const [loading, setLoading] = useState(true)
