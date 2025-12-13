@@ -15,11 +15,13 @@ import TradeJournal from '../components/TradeJournal'
 import AfterTradeForm from '../components/AfterTradeForm'
 import PositionCalculator from '../components/PositionCalculator'
 import LearningHub from '../components/LearningHubSimple'
+import AdminPanel from '../components/AdminPanel'
 import { LearningProvider } from '../contexts/LearningContext'
 
 export default function Dashboard(){
   const [currentUser, setCurrentUser] = useState({ name: 'Trader', email: 'trader@example.com' })
   const [showLearning, setShowLearning] = useState(false)
+  const [showAdmin, setShowAdmin] = useState(false)
   
   const [activeTab, setActiveTab] = useState('overview')
   const [showImport, setShowImport] = useState(false)
@@ -111,6 +113,17 @@ export default function Dashboard(){
     }
   }, [trades])
 
+  // Hidden admin access - Press Ctrl+Shift+A
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+        setShowAdmin(true)
+      }
+    }
+    window.addEventListener('keydown', handleKeyPress)
+    return () => window.removeEventListener('keydown', handleKeyPress)
+  }, [])
+
   const handleSaveSettings = (newBalance) => {
     setStartingBalance(newBalance)
     localStorage.setItem('startingBalance', newBalance.toString())
@@ -201,6 +214,17 @@ export default function Dashboard(){
     } catch (err) {
       console.error('Error closing trade:', err)
     }
+  }
+
+  if (showAdmin) {
+    return (
+      <AdminPanel 
+        onBackToDashboard={() => setShowAdmin(false)}
+        onLogout={handleUserLogout}
+        trades={trades}
+        metrics={metrics}
+      />
+    )
   }
 
   if (showLearning) {
