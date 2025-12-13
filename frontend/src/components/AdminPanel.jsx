@@ -224,13 +224,28 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
     setIsUploading(true);
     setUploadProgress(0);
     
-    // Simulate file upload progress
+    // Validate file type
+    if (type === 'video' && !file.type.startsWith('video/')) {
+      addLog(`Invalid file type. Please select a video file.`, 'error');
+      setIsUploading(false);
+      return;
+    }
+    
+    // Check file size (limit to 500MB for demo)
+    const maxSize = 500 * 1024 * 1024; // 500MB
+    if (file.size > maxSize) {
+      addLog(`File too large. Maximum size is 500MB.`, 'error');
+      setIsUploading(false);
+      return;
+    }
+    
+    // Simulate realistic upload progress
     const uploadSimulation = setInterval(() => {
       setUploadProgress(prev => {
         if (prev >= 100) {
           clearInterval(uploadSimulation);
           setIsUploading(false);
-          addLog(`${type} file uploaded successfully: ${file.name}`, 'success');
+          addLog(`${type} file processed successfully: ${file.name}`, 'success');
           
           // Update form data with file info
           setFormData(prev => ({
@@ -238,14 +253,17 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
             fileName: file.name,
             fileSize: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
             fileType: file.type,
-            duration: type === 'video' ? '00:00' : undefined
+            // Auto-generate a placeholder URL for demo
+            video_url: type === 'video' ? `https://example.com/videos/${file.name.replace(/\s+/g, '_')}` : prev.video_url
           }));
           
           return 100;
         }
-        return prev + 10;
+        // Simulate realistic upload speed (slower at start, faster in middle)
+        const increment = prev < 20 ? 2 : prev < 80 ? 8 : 3;
+        return Math.min(prev + increment, 100);
       });
-    }, 200);
+    }, 300);
   };
 
   const loadUsers = async () => {
@@ -1570,70 +1588,72 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
 
                 {contentModalType === 'video' && (
                   <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Video File *</label>
-                      <div className="border-2 border-dashed border-slate-600 rounded-lg p-6 text-center">
-                        {formData.fileName ? (
-                          <div className="text-green-400">
-                            <div className="text-2xl mb-2">✅</div>
-                            <p className="font-medium">{formData.fileName}</p>
-                            <p className="text-sm text-gray-400">{formData.fileSize}</p>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="text-4xl mb-2">📁</div>
-                            <p className="text-gray-400 mb-2">Drag and drop video file here</p>
-                            <input
-                              type="file"
-                              accept="video/*"
-                              onChange={(e) => {
-                                const file = e.target.files[0];
-                                if (file) handleFileUpload(file, 'video');
-                              }}
-                              className="hidden"
-                              id="video-upload"
-                            />
-                            <label
-                              htmlFor="video-upload"
-                              className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors cursor-pointer inline-block"
-                            >
-                              Choose File
-                            </label>
-                          </>
-                        )}
-                        {isUploading && (
-                          <div className="mt-4">
-                            <div className="bg-gray-700 rounded-full h-2">
-                              <div 
-                                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${uploadProgress}%` }}
-                              ></div>
-                            </div>
-                            <p className="text-sm text-gray-400 mt-2">Uploading... {uploadProgress}%</p>
-                          </div>
-                        )}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Duration *</label>
+                        <input
+                          type="text"
+                          value={formData.duration || ''}
+                          onChange={(e) => handleInputChange('duration', e.target.value)}
+                          className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="e.g., 15:30"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Category *</label>
+                        <select
+                          value={formData.category || ''}
+                          onChange={(e) => handleInputChange('category', e.target.value)}
+                          className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        >
+                          <option value="">Select Category</option>
+                          <option value="Technical Analysis">Technical Analysis</option>
+                          <option value="Risk Management">Risk Management</option>
+                          <option value="Trading Psychology">Trading Psychology</option>
+                          <option value="Market Analysis">Market Analysis</option>
+                          <option value="Strategy Development">Strategy Development</option>
+                          <option value="Beginner Guide">Beginner Guide</option>
+                        </select>
                       </div>
                     </div>
+                    
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Thumbnail</label>
-                      <div className="border-2 border-dashed border-slate-600 rounded-lg p-4 text-center">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) handleFileUpload(file, 'thumbnail');
-                          }}
-                          className="hidden"
-                          id="thumbnail-upload"
-                        />
-                        <p className="text-gray-400 mb-2">Upload thumbnail image</p>
-                        <label
-                          htmlFor="thumbnail-upload"
-                          className="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg transition-colors cursor-pointer inline-block"
-                        >
-                          Choose Image
-                        </label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Video URL *</label>
+                      <input
+                        type="url"
+                        value={formData.video_url || ''}
+                        onChange={(e) => handleInputChange('video_url', e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="https://www.youtube.com/embed/VIDEO_ID or direct video URL"
+                        required
+                      />
+                      <p className="text-sm text-gray-400 mt-1">
+                        For YouTube: Use embed URL format (youtube.com/embed/VIDEO_ID)
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Thumbnail Emoji</label>
+                      <input
+                        type="text"
+                        value={formData.thumbnail || ''}
+                        onChange={(e) => handleInputChange('thumbnail', e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="🎥 (Choose an emoji for the video thumbnail)"
+                        maxLength="2"
+                      />
+                    </div>
+
+                    <div className="bg-blue-900 border border-blue-700 p-4 rounded-lg">
+                      <h4 className="font-bold text-blue-300 mb-2">📹 Video Upload Instructions</h4>
+                      <div className="text-sm text-blue-200 space-y-1">
+                        <p>• Upload your video to YouTube, Vimeo, or any video hosting platform</p>
+                        <p>• Copy the embed URL (for YouTube: youtube.com/embed/VIDEO_ID)</p>
+                        <p>• Paste the URL in the "Video URL" field above</p>
+                        <p>• Fill in the duration, category, and description</p>
+                        <p>• Click "Create Video" to add it to your learning platform</p>
                       </div>
                     </div>
                   </>
