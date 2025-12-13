@@ -173,6 +173,8 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
     try {
       // Handle video uploads differently based on upload method
       if (contentModalType === 'video' && formData.uploadMethod === 'file' && formData.videoFile) {
+        addLog(`Starting file upload: ${formData.videoFile.name} (${(formData.videoFile.size / (1024 * 1024)).toFixed(2)} MB)`, 'info');
+        
         // File upload - use FormData and upload endpoint
         const uploadFormData = new FormData();
         uploadFormData.append('video', formData.videoFile);
@@ -184,28 +186,45 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
 
         // Use dynamic API URL
         const API_BASE_URL = import.meta.env.VITE_API_URL || window.location.origin;
-        const response = await fetch(`${API_BASE_URL}/api/learning/upload-video`, {
-          method: 'POST',
-          body: uploadFormData
-        });
-
-        const result = await response.json();
+        const uploadUrl = `${API_BASE_URL}/api/learning/upload-video`;
         
-        if (result.success) {
-          addLog(`Video uploaded successfully: ${formData.title}`, 'success');
+        addLog(`Uploading to: ${uploadUrl}`, 'info');
+        
+        try {
+          const response = await fetch(uploadUrl, {
+            method: 'POST',
+            body: uploadFormData
+          });
+
+          addLog(`Upload response status: ${response.status}`, response.ok ? 'success' : 'error');
           
-          // Add the new video to the learning context immediately
-          const newVideo = {
-            ...result.data,
-            status: 'Published' // Ensure it's published so it shows up
-          };
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+          }
+
+          const result = await response.json();
           
-          // Use the context function to add the video
-          addContent('video', newVideo);
-          
-          addLog(`Video added to learning hub: ${formData.title}`, 'success');
-        } else {
-          throw new Error(result.message || 'Upload failed');
+          if (result.success) {
+            addLog(`✅ Video uploaded successfully: ${formData.title}`, 'success');
+            addLog(`📁 File stored at: ${result.data.video_url}`, 'info');
+            
+            // Add the new video to the learning context immediately
+            const newVideo = {
+              ...result.data,
+              status: 'Published' // Ensure it's published so it shows up
+            };
+            
+            // Use the context function to add the video
+            await addContent('video', newVideo);
+            
+            addLog(`🎯 Video added to learning hub: ${formData.title}`, 'success');
+          } else {
+            throw new Error(result.message || 'Upload failed - no success flag');
+          }
+        } catch (fetchError) {
+          addLog(`❌ Upload request failed: ${fetchError.message}`, 'error');
+          throw fetchError;
         }
       } else {
         // Regular content creation (URL-based videos, courses, streams, etc.)
@@ -646,13 +665,41 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
                 <h3 className="text-xl font-bold">Registered Users ({users.length})</h3>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => {
-                      addLog(`Debug: Authentication bypassed - direct access mode`, 'info');
-                      console.log('Debug info:', { users: users.length, trades: trades.length });
+                    onClick={async () => {
+                      addLog(`🧪 Testing video upload functionality...`, 'info');
+                      
+                      // Test 1: Check backend connection
+                      try {
+                        const API_BASE_URL = import.meta.env.VITE_API_URL || window.location.origin;
+                        const response = await fetch(`${API_BASE_URL}/api/learning`);
+                        const data = await response.json();
+                        addLog(`✅ Backend connected: ${data.data?.videos?.length || 0} videos found`, 'success');
+                      } catch (error) {
+                        addLog(`❌ Backend connection failed: ${error.message}`, 'error');
+                      }
+                      
+                      // Test 2: Check upload endpoint
+                      try {
+                        const API_BASE_URL = import.meta.env.VITE_API_URL || window.location.origin;
+                        const response = await fetch(`${API_BASE_URL}/api/learning/upload-video`, {
+                          method: 'POST',
+                          body: new FormData() // Empty form to test endpoint
+                        });
+                        addLog(`Upload endpoint response: ${response.status}`, response.status === 400 ? 'info' : 'error');
+                      } catch (error) {
+                        addLog(`❌ Upload endpoint error: ${error.message}`, 'error');
+                      }
+                      
+                      console.log('Debug info:', { 
+                        users: users.length, 
+                        trades: trades.length,
+                        learningContent: learningContent,
+                        API_BASE_URL: import.meta.env.VITE_API_URL || window.location.origin
+                      });
                     }}
                     className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded-lg transition-colors"
                   >
-                    🐛 Debug
+                    🧪 Test Upload
                   </button>
                   <button
                     onClick={loadUsers}
@@ -1711,14 +1758,36 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
                           <input
                             type="url"
                             value={formData.video_url || ''}
-                            onChange={(e) => handleInputChange('video_url', e.target.value)}
+                            onChange={(e) => {
+                              let url = e.target.value;
+                              
+                              // Auto-convert YouTube URLs to embed format
+                              if (url.includes('youtube.com/watch?v=')) {
+                                const videoId = url.split('v=')[1]?.split('&')[0];
+                                if (videoId) {
+                                  url = `https://www.youtube.com/embed/${videoId}`;
+                                }
+                              } else if (url.includes('youtu.be/')) {
+                                const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+                                if (videoId) {
+                                  url = `https://www.youtube.com/embed/${videoId}`;
+                                }
+                              }
+                              
+                              handleInputChange('video_url', url);
+                            }}
                             className="w-full px-4 py-3 bg-slate-600 border border-slate-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="https://www.youtube.com/embed/VIDEO_ID or direct video URL"
+                            placeholder="https://www.youtube.com/watch?v=VIDEO_ID or any video URL"
                             required
                           />
-                          <p className="text-sm text-gray-400 mt-1">
-                            For YouTube: Use embed URL format (youtube.com/embed/VIDEO_ID)
-                          </p>
+                          <div className="text-sm text-gray-400 mt-1 space-y-1">
+                            <p>✅ YouTube: Regular or embed URLs (auto-converted)</p>
+                            <p>✅ Vimeo: https://vimeo.com/VIDEO_ID</p>
+                            <p>✅ Direct: Any .mp4, .webm, .ogg video file URL</p>
+                            {formData.video_url && formData.video_url !== e?.target?.value && (
+                              <p className="text-green-400">🔄 Auto-converted to: {formData.video_url}</p>
+                            )}
+                          </div>
                         </div>
                       )}
 
@@ -1733,9 +1802,32 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
                               onChange={(e) => {
                                 const file = e.target.files[0];
                                 if (file) {
+                                  console.log('File selected:', {
+                                    name: file.name,
+                                    size: file.size,
+                                    type: file.type,
+                                    lastModified: file.lastModified
+                                  });
+                                  
+                                  // Validate file type
+                                  if (!file.type.startsWith('video/')) {
+                                    addLog(`❌ Invalid file type: ${file.type}. Please select a video file.`, 'error');
+                                    return;
+                                  }
+                                  
+                                  // Validate file size (500MB limit)
+                                  const maxSize = 500 * 1024 * 1024;
+                                  if (file.size > maxSize) {
+                                    addLog(`❌ File too large: ${(file.size / (1024 * 1024)).toFixed(2)} MB. Maximum size is 500MB.`, 'error');
+                                    return;
+                                  }
+                                  
                                   handleInputChange('videoFile', file);
                                   handleInputChange('fileName', file.name);
                                   handleInputChange('fileSize', (file.size / (1024 * 1024)).toFixed(2) + ' MB');
+                                  addLog(`✅ File selected: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`, 'success');
+                                } else {
+                                  addLog('No file selected', 'warning');
                                 }
                               }}
                               className="hidden"
@@ -1775,6 +1867,21 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
                         <p>• Maximum file size: 500MB</p>
                         <p>• Files are stored securely on your server</p>
                       </div>
+                      
+                      {/* Debug Info */}
+                      <details className="mt-3">
+                        <summary className="cursor-pointer text-blue-300 hover:text-blue-100 text-xs">
+                          🔍 Debug Info
+                        </summary>
+                        <div className="mt-2 p-2 bg-blue-800 rounded text-xs space-y-1">
+                          <p>Upload Method: {formData.uploadMethod || 'url'}</p>
+                          <p>Video URL: {formData.video_url || 'Not set'}</p>
+                          <p>File Selected: {formData.fileName || 'None'}</p>
+                          <p>File Size: {formData.fileSize || 'N/A'}</p>
+                          <p>API Base: {import.meta.env.VITE_API_URL || window.location.origin}</p>
+                          <p>Backend Status: {isUploading ? 'Uploading...' : 'Ready'}</p>
+                        </div>
+                      </details>
                     </div>
                   </>
                 )}
