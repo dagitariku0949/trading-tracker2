@@ -113,47 +113,64 @@ export default function Dashboard(){
     }
   }, [trades])
 
-  // Hidden admin access - Type "dagi" while holding Ctrl+Alt
+  // Hidden admin access - Hold Ctrl+Alt and type "dagi.." anywhere on the page
   useEffect(() => {
     let sequence = ''
     let sequenceTimer = null
+    let ctrlAltPressed = false
     
-    const handleKeyPress = (e) => {
+    const handleKeyDown = (e) => {
+      // Check if Ctrl+Alt is being held
       if (e.ctrlKey && e.altKey) {
-        // Prevent default browser behavior
-        e.preventDefault()
+        ctrlAltPressed = true
         
-        // Clear previous timer
-        if (sequenceTimer) clearTimeout(sequenceTimer)
-        
-        // Add key to sequence
-        sequence += e.key.toLowerCase()
-        
-        // Check if sequence matches "dagi"
-        if (sequence === 'dagi') {
-          const password = prompt('Enter admin password:')
-          if (password === 'LEAP2024Admin!') {
-            setShowAdmin(true)
-          } else if (password !== null) {
-            alert('Invalid password')
+        // Capture typed characters while Ctrl+Alt is held
+        if (e.key.length === 1 || e.key === '.') {
+          // Clear previous timer
+          if (sequenceTimer) clearTimeout(sequenceTimer)
+          
+          // Add key to sequence
+          sequence += e.key.toLowerCase()
+          
+          // Keep only last 6 characters (length of "dagi..")
+          if (sequence.length > 6) {
+            sequence = sequence.slice(-6)
           }
-          sequence = '' // Reset sequence
-        } else if (sequence.length >= 4 || !'dagi'.startsWith(sequence)) {
-          sequence = '' // Reset if wrong sequence or too long
+          
+          // Check if sequence ends with "dagi.."
+          if (sequence.endsWith('dagi..')) {
+            const password = prompt('Enter admin password:')
+            if (password === 'LEAP2024Admin!') {
+              setShowAdmin(true)
+            } else if (password !== null) {
+              alert('Invalid password')
+            }
+            sequence = '' // Reset sequence
+            ctrlAltPressed = false
+          }
+          
+          // Reset sequence after 3 seconds of inactivity
+          sequenceTimer = setTimeout(() => {
+            sequence = ''
+          }, 3000)
         }
-        
-        // Reset sequence after 2 seconds of inactivity
-        sequenceTimer = setTimeout(() => {
-          sequence = ''
-        }, 2000)
-      } else {
-        sequence = '' // Reset if Ctrl+Alt not held
       }
     }
     
-    window.addEventListener('keydown', handleKeyPress)
+    const handleKeyUp = (e) => {
+      // Reset when Ctrl or Alt is released
+      if (!e.ctrlKey || !e.altKey) {
+        ctrlAltPressed = false
+        sequence = ''
+        if (sequenceTimer) clearTimeout(sequenceTimer)
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
     return () => {
-      window.removeEventListener('keydown', handleKeyPress)
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
       if (sequenceTimer) clearTimeout(sequenceTimer)
     }
   }, [])
