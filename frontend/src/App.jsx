@@ -15,11 +15,13 @@ import TradeJournal from './components/TradeJournal'
 import AfterTradeForm from './components/AfterTradeForm'
 import PositionCalculator from './components/PositionCalculator'
 import LearningHub from './components/LearningHubSimple'
+import AdminPanel from './components/AdminPanel'
 import { LearningProvider } from './contexts/LearningContext'
 
 export default function App(){
   const [currentUser, setCurrentUser] = useState({ name: 'Trader', email: 'trader@example.com' })
   const [showLearning, setShowLearning] = useState(false)
+  const [showAdmin, setShowAdmin] = useState(false)
   
 
   const [activeTab, setActiveTab] = useState('overview')
@@ -224,6 +226,17 @@ export default function App(){
     )
   }
 
+  if (showAdmin) {
+    return (
+      <AdminPanel 
+        onBackToDashboard={() => setShowAdmin(false)}
+        onLogout={handleUserLogout}
+        trades={trades}
+        metrics={metrics}
+      />
+    )
+  }
+
 
 
 
@@ -265,6 +278,13 @@ export default function App(){
             >
               👨‍🏫 Learn
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
+            </button>
+            <button
+              onClick={() => setShowAdmin(true)}
+              className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg font-semibold transition"
+              title="Admin Panel"
+            >
+              🎛️ Admin
             </button>
             <button
               onClick={handleUserLogout}
