@@ -5,10 +5,10 @@
   "framework": "vite",
   "functions": {
     "api/trades.js": {
-      "runtime": "nodejs18.x"
+      "runtime": "@vercel/node"
     },
     "api/learning.js": {
-      "runtime": "nodejs18.x"
+      "runtime": "@vercel/node"
     }
   },
   "rewrites": [
