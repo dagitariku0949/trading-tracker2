@@ -16,7 +16,6 @@ import AfterTradeForm from '../components/AfterTradeForm'
 import PositionCalculator from '../components/PositionCalculator'
 import LearningHub from '../components/LearningHubSimple'
 import AdminPanel from '../components/AdminPanel'
-import { LearningProvider } from '../contexts/LearningContext'
 
 export default function Dashboard(){
   const [currentUser, setCurrentUser] = useState({ name: 'Trader', email: 'trader@example.com' })
@@ -281,18 +280,12 @@ export default function Dashboard(){
   if (showLearning) {
     console.log('RENDERING LEARNING HUB - showLearning is true');
     return (
-      <div>
-        <div style={{background: 'red', color: 'white', padding: '20px', textAlign: 'center'}}>
-          DEBUG: Learning Hub should render here - {new Date().toISOString()}
-        </div>
-        <LearningHub 
-          onBack={() => {
-            console.log('Back button clicked');
-            setShowLearning(false)
-            setShowLanding(true)
-          }}
-        />
-      </div>
+      <LearningHub 
+        onBack={() => {
+          console.log('Back button clicked');
+          setShowLearning(false)
+        }}
+      />
     )
   }
 
@@ -305,7 +298,6 @@ export default function Dashboard(){
   }
 
   return (
-    <LearningProvider>
       <div className="min-h-screen bg-slate-900 text-white p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -577,6 +569,5 @@ export default function Dashboard(){
         )}
       </div>
     </div>
-    </LearningProvider>
   )
 }
