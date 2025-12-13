@@ -113,7 +113,15 @@ const LearningHubSimple = ({ onBack }) => {
     { id: 'resources', label: 'Resources', icon: '📚' }
   ];
 
-  console.log('LearningHubSimple rendering with courses:', learningContent.courses.length);
+  console.log('🎬 LearningHubSimple rendering:', {
+    courses: learningContent.courses.length,
+    videos: learningContent.videos.length,
+    videoTitles: learningContent.videos.map(v => v.title),
+    videoUrls: learningContent.videos.map(v => v.video_url),
+    loading,
+    error,
+    timestamp: new Date().toISOString()
+  });
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
@@ -129,14 +137,28 @@ const LearningHubSimple = ({ onBack }) => {
                 ← Back to Dashboard
               </button>
               <button
-                onClick={() => {
-                  console.log('Refreshing learning content...');
-                  window.location.reload();
+                onClick={async () => {
+                  console.log('🔄 Force refreshing learning content...');
+                  
+                  // Try to fetch fresh data from API
+                  try {
+                    const API_BASE_URL = import.meta.env.VITE_API_URL || window.location.origin;
+                    const response = await fetch(`${API_BASE_URL}/api/learning?t=${Date.now()}`);
+                    const data = await response.json();
+                    console.log('📊 Fresh data from API:', data.data?.videos?.length, 'videos');
+                    
+                    // Force page reload to ensure fresh data
+                    window.location.reload();
+                  } catch (error) {
+                    console.error('❌ Refresh failed:', error);
+                    // Still reload the page
+                    window.location.reload();
+                  }
                 }}
                 className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors"
-                title="Refresh videos"
+                title="Force refresh videos from server"
               >
-                🔄 Refresh
+                🔄 Force Refresh
               </button>
             </div>
             <div className="text-right">

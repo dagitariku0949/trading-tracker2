@@ -261,6 +261,14 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
         }
 
         addLog(`${editingContent ? 'Updated' : 'Created'} ${contentModalType}: ${formData.title}`, 'success');
+        
+        // Force refresh the learning content to show new video immediately
+        if (typeof window !== 'undefined' && window.location.pathname.includes('learning')) {
+          addLog('🔄 Refreshing learning content...', 'info');
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }
       }
 
       setShowContentModal(false);
