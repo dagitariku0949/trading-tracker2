@@ -236,7 +236,34 @@ const LearningHubSimple = ({ onBack }) => {
         {/* Videos Section */}
         {activeCategory === 'videos' && (
           <div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Debug Info */}
+            <div className="bg-blue-900 border border-blue-700 p-4 rounded-lg mb-6">
+              <h3 className="font-bold text-blue-300 mb-2">📹 Video Management Status</h3>
+              <div className="text-sm text-blue-200 space-y-1">
+                <p>• Total Videos Available: {learningContent.videos.length}</p>
+                <p>• Source: {loading ? 'Loading...' : error ? 'Fallback Data' : 'Live API'}</p>
+                <p>• Last Updated: {new Date().toLocaleTimeString()}</p>
+                <p>• Admin Panel: Use Ctrl+Alt+dagi.. to add/edit videos</p>
+              </div>
+            </div>
+            
+            {learningContent.videos.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">📹</div>
+                <h3 className="text-xl font-bold mb-2">No Videos Available</h3>
+                <p className="text-gray-400 mb-4">Use the admin panel to add your first video</p>
+                <div className="bg-yellow-900 border border-yellow-700 p-4 rounded-lg max-w-md mx-auto">
+                  <p className="text-yellow-300 text-sm">
+                    <strong>How to add videos:</strong><br/>
+                    1. Press Ctrl+Alt+dagi..<br/>
+                    2. Enter password: LEAP2024Admin!<br/>
+                    3. Go to "Learning Management" tab<br/>
+                    4. Click "+ Upload Video"
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {learningContent.videos.map(video => (
                 <div key={video.id} className="bg-slate-800 rounded-lg overflow-hidden hover:bg-slate-750 transition-colors cursor-pointer"
                      onClick={() => setSelectedVideo(video)}>
@@ -257,7 +284,8 @@ const LearningHubSimple = ({ onBack }) => {
                   </div>
                 </div>
               ))}
-            </div>
+              </div>
+            )}
 
             {/* Video Modal */}
             {selectedVideo && (
@@ -274,13 +302,33 @@ const LearningHubSimple = ({ onBack }) => {
                       </button>
                     </div>
                     <div className="aspect-video bg-slate-700 rounded-lg mb-4 flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="text-6xl mb-4">🎥</div>
-                        <p className="text-gray-400">Video player would be embedded here</p>
-                        <p className="text-sm text-gray-500 mt-2">
-                          In production, this would show the actual video content
-                        </p>
-                      </div>
+                      {selectedVideo.video_url && selectedVideo.video_url.includes('youtube.com/embed') ? (
+                        <iframe
+                          src={selectedVideo.video_url}
+                          className="w-full h-full rounded-lg"
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          title={selectedVideo.title}
+                        ></iframe>
+                      ) : selectedVideo.video_url && selectedVideo.video_url.startsWith('http') ? (
+                        <video
+                          src={selectedVideo.video_url}
+                          className="w-full h-full rounded-lg"
+                          controls
+                          title={selectedVideo.title}
+                        >
+                          Your browser does not support the video tag.
+                        </video>
+                      ) : (
+                        <div className="text-center">
+                          <div className="text-6xl mb-4">{selectedVideo.thumbnail || '🎥'}</div>
+                          <p className="text-gray-400">Video preview</p>
+                          <p className="text-sm text-gray-500 mt-2">
+                            {selectedVideo.video_url ? 'Video URL: ' + selectedVideo.video_url : 'No video URL provided'}
+                          </p>
+                        </div>
+                      )}
                     </div>
                     <p className="text-gray-300">{selectedVideo.description}</p>
                   </div>
