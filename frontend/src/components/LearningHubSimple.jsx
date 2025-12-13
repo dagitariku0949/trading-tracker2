@@ -128,6 +128,16 @@ const LearningHubSimple = ({ onBack }) => {
               >
                 ← Back to Dashboard
               </button>
+              <button
+                onClick={() => {
+                  console.log('Refreshing learning content...');
+                  window.location.reload();
+                }}
+                className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors"
+                title="Refresh videos"
+              >
+                🔄 Refresh
+              </button>
             </div>
             <div className="text-right">
               <div className="text-sm opacity-90">Learn with</div>
@@ -244,6 +254,26 @@ const LearningHubSimple = ({ onBack }) => {
                 <p>• Source: {loading ? 'Loading...' : error ? 'Fallback Data' : 'Live API'}</p>
                 <p>• Last Updated: {new Date().toLocaleTimeString()}</p>
                 <p>• Admin Panel: Use Ctrl+Alt+dagi.. to add/edit videos</p>
+                {learningContent.videos.length > 0 && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-blue-300 hover:text-blue-100">
+                      🔍 Show Video Details ({learningContent.videos.length} videos)
+                    </summary>
+                    <div className="mt-2 pl-4 space-y-1">
+                      {learningContent.videos.map((video, index) => (
+                        <div key={video.id} className="text-xs">
+                          {index + 1}. <strong>{video.title}</strong>
+                          <br />
+                          &nbsp;&nbsp;&nbsp;URL: {video.video_url || 'No URL'}
+                          <br />
+                          &nbsp;&nbsp;&nbsp;Type: {video.video_url?.startsWith('/uploads/') ? 'Uploaded File' : 
+                                                   video.video_url?.includes('youtube') ? 'YouTube' : 
+                                                   video.video_url?.includes('vimeo') ? 'Vimeo' : 'External URL'}
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
               </div>
             </div>
             
@@ -302,42 +332,119 @@ const LearningHubSimple = ({ onBack }) => {
                       </button>
                     </div>
                     <div className="aspect-video bg-slate-700 rounded-lg mb-4 flex items-center justify-center">
-                      {selectedVideo.video_url && selectedVideo.video_url.includes('youtube.com/embed') ? (
-                        <iframe
-                          src={selectedVideo.video_url}
-                          className="w-full h-full rounded-lg"
-                          frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                          title={selectedVideo.title}
-                        ></iframe>
-                      ) : selectedVideo.video_url && selectedVideo.video_url.startsWith('/uploads/') ? (
-                        <video
-                          src={`http://localhost:4000${selectedVideo.video_url}`}
-                          className="w-full h-full rounded-lg"
-                          controls
-                          title={selectedVideo.title}
-                        >
-                          Your browser does not support the video tag.
-                        </video>
-                      ) : selectedVideo.video_url && selectedVideo.video_url.startsWith('http') ? (
-                        <video
-                          src={selectedVideo.video_url}
-                          className="w-full h-full rounded-lg"
-                          controls
-                          title={selectedVideo.title}
-                        >
-                          Your browser does not support the video tag.
-                        </video>
-                      ) : (
-                        <div className="text-center">
-                          <div className="text-6xl mb-4">{selectedVideo.thumbnail || '🎥'}</div>
-                          <p className="text-gray-400">Video preview</p>
-                          <p className="text-sm text-gray-500 mt-2">
-                            {selectedVideo.video_url ? 'Video URL: ' + selectedVideo.video_url : 'No video URL provided'}
-                          </p>
-                        </div>
-                      )}
+                      {(() => {
+                        const videoUrl = selectedVideo.video_url;
+                        console.log('Playing video:', selectedVideo.title, 'URL:', videoUrl);
+                        
+                        // YouTube embed URLs
+                        if (videoUrl && (videoUrl.includes('youtube.com/embed') || videoUrl.includes('youtu.be'))) {
+                          return (
+                            <iframe
+                              src={videoUrl}
+                              className="w-full h-full rounded-lg"
+                              frameBorder="0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                              title={selectedVideo.title}
+                            ></iframe>
+                          );
+                        }
+                        
+                        // Vimeo embed URLs
+                        if (videoUrl && videoUrl.includes('vimeo.com')) {
+                          return (
+                            <iframe
+                              src={videoUrl}
+                              className="w-full h-full rounded-lg"
+                              frameBorder="0"
+                              allow="autoplay; fullscreen; picture-in-picture"
+                              allowFullScreen
+                              title={selectedVideo.title}
+                            ></iframe>
+                          );
+                        }
+                        
+                        // Uploaded files (server-hosted)
+                        if (videoUrl && videoUrl.startsWith('/uploads/')) {
+                          const API_BASE_URL = import.meta.env.VITE_API_URL || window.location.origin;
+                          const fullVideoUrl = `${API_BASE_URL}${videoUrl}`;
+                          return (
+                            <video
+                              src={fullVideoUrl}
+                              className="w-full h-full rounded-lg"
+                              controls
+                              title={selectedVideo.title}
+                              onError={(e) => {
+                                console.error('Video load error:', e);
+                                console.log('Attempted URL:', fullVideoUrl);
+                              }}
+                            >
+                              Your browser does not support the video tag.
+                            </video>
+                          );
+                        }
+                        
+                        // Direct video URLs (external hosting)
+                        if (videoUrl && videoUrl.startsWith('http') && 
+                            (videoUrl.includes('.mp4') || videoUrl.includes('.webm') || videoUrl.includes('.ogg'))) {
+                          return (
+                            <video
+                              src={videoUrl}
+                              className="w-full h-full rounded-lg"
+                              controls
+                              title={selectedVideo.title}
+                              onError={(e) => {
+                                console.error('Video load error:', e);
+                                console.log('Attempted URL:', videoUrl);
+                              }}
+                            >
+                              Your browser does not support the video tag.
+                            </video>
+                          );
+                        }
+                        
+                        // Fallback for any other HTTP URLs (try as video first, then show info)
+                        if (videoUrl && videoUrl.startsWith('http')) {
+                          return (
+                            <div className="text-center">
+                              <video
+                                src={videoUrl}
+                                className="w-full h-full rounded-lg mb-4"
+                                controls
+                                title={selectedVideo.title}
+                                onError={(e) => {
+                                  console.error('Video load error:', e);
+                                  e.target.style.display = 'none';
+                                  e.target.nextElementSibling.style.display = 'block';
+                                }}
+                              >
+                                Your browser does not support the video tag.
+                              </video>
+                              <div style={{display: 'none'}} className="text-center">
+                                <div className="text-6xl mb-4">{selectedVideo.thumbnail || '🎥'}</div>
+                                <p className="text-gray-400">Video format not supported in browser</p>
+                                <p className="text-sm text-gray-500 mt-2">
+                                  <a href={videoUrl} target="_blank" rel="noopener noreferrer" 
+                                     className="text-blue-400 hover:text-blue-300 underline">
+                                    Open video in new tab
+                                  </a>
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        // No video URL provided
+                        return (
+                          <div className="text-center">
+                            <div className="text-6xl mb-4">{selectedVideo.thumbnail || '🎥'}</div>
+                            <p className="text-gray-400">Video preview</p>
+                            <p className="text-sm text-gray-500 mt-2">
+                              {videoUrl ? `Video URL: ${videoUrl}` : 'No video URL provided'}
+                            </p>
+                          </div>
+                        );
+                      })()}
                     </div>
                     <p className="text-gray-300">{selectedVideo.description}</p>
                   </div>

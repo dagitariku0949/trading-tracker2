@@ -182,7 +182,9 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
         uploadFormData.append('category', formData.category);
         uploadFormData.append('thumbnail', formData.thumbnail || '🎥');
 
-        const response = await fetch('http://localhost:4000/api/learning/upload-video', {
+        // Use dynamic API URL
+        const API_BASE_URL = import.meta.env.VITE_API_URL || window.location.origin;
+        const response = await fetch(`${API_BASE_URL}/api/learning/upload-video`, {
           method: 'POST',
           body: uploadFormData
         });
@@ -191,8 +193,17 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
         
         if (result.success) {
           addLog(`Video uploaded successfully: ${formData.title}`, 'success');
-          // Refresh learning content (this would typically be handled by context)
-          window.location.reload(); // Simple refresh for now
+          
+          // Add the new video to the learning context immediately
+          const newVideo = {
+            ...result.data,
+            status: 'Published' // Ensure it's published so it shows up
+          };
+          
+          // Use the context function to add the video
+          addContent('video', newVideo);
+          
+          addLog(`Video added to learning hub: ${formData.title}`, 'success');
         } else {
           throw new Error(result.message || 'Upload failed');
         }
@@ -201,7 +212,7 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
         const newContent = {
           id: editingContent ? editingContent.id : Date.now(),
           ...formData,
-          status: editingContent ? editingContent.status : 'Draft',
+          status: editingContent ? editingContent.status : 'Published', // Ensure new content is published
           createdAt: editingContent ? editingContent.createdAt : new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
@@ -213,16 +224,21 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
         } else if (contentModalType === 'video') {
           newContent.views = editingContent ? editingContent.views : 0;
           newContent.likes = editingContent ? editingContent.likes : 0;
-          newContent.uploadDate = editingContent ? editingContent.uploadDate : new Date().toISOString();
+          newContent.upload_date = editingContent ? editingContent.upload_date : new Date().toISOString();
+          
+          // Ensure video_url is properly set for URL uploads
+          if ((formData.uploadMethod || 'url') === 'url' && formData.video_url) {
+            newContent.video_url = formData.video_url;
+          }
         } else if (contentModalType === 'stream') {
           newContent.registrations = editingContent ? editingContent.registrations : 0;
         }
 
         // Use context functions to manage content
         if (editingContent) {
-          updateContent(contentModalType, editingContent.id, newContent);
+          await updateContent(contentModalType, editingContent.id, newContent);
         } else {
-          addContent(contentModalType, newContent);
+          await addContent(contentModalType, newContent);
         }
 
         addLog(`${editingContent ? 'Updated' : 'Created'} ${contentModalType}: ${formData.title}`, 'success');
