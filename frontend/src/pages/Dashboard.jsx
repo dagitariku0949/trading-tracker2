@@ -113,13 +113,16 @@ export default function Dashboard(){
     }
   }, [trades])
 
-  // Hidden admin access - Type "dagi" while holding Ctrl+Shift
+  // Hidden admin access - Type "dagi" while holding Ctrl+Alt
   useEffect(() => {
     let sequence = ''
     let sequenceTimer = null
     
     const handleKeyPress = (e) => {
-      if (e.ctrlKey && e.shiftKey) {
+      if (e.ctrlKey && e.altKey) {
+        // Prevent default browser behavior
+        e.preventDefault()
+        
         // Clear previous timer
         if (sequenceTimer) clearTimeout(sequenceTimer)
         
@@ -144,7 +147,7 @@ export default function Dashboard(){
           sequence = ''
         }, 2000)
       } else {
-        sequence = '' // Reset if Ctrl+Shift not held
+        sequence = '' // Reset if Ctrl+Alt not held
       }
     }
     
