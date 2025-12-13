@@ -262,13 +262,8 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
 
         addLog(`${editingContent ? 'Updated' : 'Created'} ${contentModalType}: ${formData.title}`, 'success');
         
-        // Force refresh the learning content to show new video immediately
-        if (typeof window !== 'undefined' && window.location.pathname.includes('learning')) {
-          addLog('🔄 Refreshing learning content...', 'info');
-          setTimeout(() => {
-            window.location.reload();
-          }, 1000);
-        }
+        // Show success message with instructions instead of auto-refresh
+        addLog(`✅ ${contentModalType} created successfully! Go to Learning Hub and click "Force Refresh" to see it.`, 'success');
       }
 
       setShowContentModal(false);
@@ -674,40 +669,31 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
                 <div className="flex gap-2">
                   <button
                     onClick={async () => {
-                      addLog(`🧪 Testing video upload functionality...`, 'info');
+                      addLog(`🧪 Testing video creation...`, 'info');
                       
-                      // Test 1: Check backend connection
                       try {
-                        const API_BASE_URL = import.meta.env.VITE_API_URL || window.location.origin;
-                        const response = await fetch(`${API_BASE_URL}/api/learning`);
-                        const data = await response.json();
-                        addLog(`✅ Backend connected: ${data.data?.videos?.length || 0} videos found`, 'success');
+                        // Create a simple test video
+                        const testVideo = {
+                          title: `Test Video ${Date.now()}`,
+                          description: 'Quick test video creation',
+                          duration: '3:00',
+                          category: 'Technical Analysis',
+                          thumbnail: '🧪',
+                          video_url: 'https://www.youtube.com/embed/jNQXAC9IVRw',
+                          status: 'Published'
+                        };
+                        
+                        await addContent('video', testVideo);
+                        addLog(`✅ Test video created successfully!`, 'success');
+                        addLog(`📺 Go to Learning Hub and click "Force Refresh" to see it`, 'info');
+                        
                       } catch (error) {
-                        addLog(`❌ Backend connection failed: ${error.message}`, 'error');
+                        addLog(`❌ Test video creation failed: ${error.message}`, 'error');
                       }
-                      
-                      // Test 2: Check upload endpoint
-                      try {
-                        const API_BASE_URL = import.meta.env.VITE_API_URL || window.location.origin;
-                        const response = await fetch(`${API_BASE_URL}/api/learning/upload-video`, {
-                          method: 'POST',
-                          body: new FormData() // Empty form to test endpoint
-                        });
-                        addLog(`Upload endpoint response: ${response.status}`, response.status === 400 ? 'info' : 'error');
-                      } catch (error) {
-                        addLog(`❌ Upload endpoint error: ${error.message}`, 'error');
-                      }
-                      
-                      console.log('Debug info:', { 
-                        users: users.length, 
-                        trades: trades.length,
-                        learningContent: learningContent,
-                        API_BASE_URL: import.meta.env.VITE_API_URL || window.location.origin
-                      });
                     }}
                     className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded-lg transition-colors"
                   >
-                    🧪 Test Upload
+                    🧪 Quick Test Video
                   </button>
                   <button
                     onClick={loadUsers}
@@ -1767,22 +1753,30 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
                             type="url"
                             value={formData.video_url || ''}
                             onChange={(e) => {
-                              let url = e.target.value;
-                              
-                              // Auto-convert YouTube URLs to embed format
-                              if (url.includes('youtube.com/watch?v=')) {
-                                const videoId = url.split('v=')[1]?.split('&')[0];
-                                if (videoId) {
-                                  url = `https://www.youtube.com/embed/${videoId}`;
+                              try {
+                                let url = e.target.value.trim();
+                                
+                                // Only auto-convert if it looks like a complete YouTube URL
+                                if (url.length > 20 && url.includes('youtube.com/watch?v=')) {
+                                  const videoId = url.split('v=')[1]?.split('&')[0];
+                                  if (videoId && videoId.length === 11) { // YouTube video IDs are 11 characters
+                                    url = `https://www.youtube.com/embed/${videoId}`;
+                                    addLog(`🔄 Auto-converted YouTube URL`, 'info');
+                                  }
+                                } else if (url.length > 15 && url.includes('youtu.be/')) {
+                                  const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+                                  if (videoId && videoId.length === 11) {
+                                    url = `https://www.youtube.com/embed/${videoId}`;
+                                    addLog(`🔄 Auto-converted YouTube short URL`, 'info');
+                                  }
                                 }
-                              } else if (url.includes('youtu.be/')) {
-                                const videoId = url.split('youtu.be/')[1]?.split('?')[0];
-                                if (videoId) {
-                                  url = `https://www.youtube.com/embed/${videoId}`;
-                                }
+                                
+                                handleInputChange('video_url', url);
+                              } catch (error) {
+                                console.error('URL conversion error:', error);
+                                // Fallback to original value if conversion fails
+                                handleInputChange('video_url', e.target.value);
                               }
-                              
-                              handleInputChange('video_url', url);
                             }}
                             className="w-full px-4 py-3 bg-slate-600 border border-slate-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="https://www.youtube.com/watch?v=VIDEO_ID or any video URL"
