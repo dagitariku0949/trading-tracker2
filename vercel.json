@@ -3,30 +3,10 @@
   "outputDirectory": "frontend/dist",
   "installCommand": "cd frontend && npm install",
   "framework": "vite",
-  "functions": {
-    "api/trades.js": {
-      "runtime": "@vercel/node"
-    },
-    "api/learning.js": {
-      "runtime": "@vercel/node"
-    }
-  },
   "rewrites": [
     {
-      "source": "/api/trades/(.*)",
-      "destination": "/api/trades?path=$1"
-    },
-    {
-      "source": "/api/trades",
-      "destination": "/api/trades"
-    },
-    {
-      "source": "/api/learning/(.*)",
-      "destination": "/api/learning?path=$1"
-    },
-    {
-      "source": "/api/learning",
-      "destination": "/api/learning"
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
     },
     {
       "source": "/(.*)",
