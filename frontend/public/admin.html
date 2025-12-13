@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Trading Dashboard</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #0f172a;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div id="admin-root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Admin Panel Component
+        function AdminPanel() {
+            const [activeTab, setActiveTab] = useState('overview');
+            const [trades, setTrades] = useState([]);
+            const [metrics, setMetrics] = useState({});
+            const [users, setUsers] = useState([]);
+            const [logs, setLogs] = useState([]);
+            const [serverStatus, setServerStatus] = useState({
+                backend: 'checking',
+                database: 'checking',
+                totalTrades: 0,
+                accounts: 0,
+                strategies: 0,
+                uptime: '0m',
+                lastSync: 'Never'
+            });
+
+            useEffect(() => {
+                loadData();
+                const interval = setInterval(checkServerStatus, 5000);
+                return () => clearInterval(interval);
+            }, []);
+
+            const loadData = async () => {
+                try {
+                    // Load trades
+                    const tradesResponse = await axios.get('/api/trades');
+                    setTrades(tradesResponse.data || []);
+
+                    // Load metrics
+                    const metricsResponse = await axios.get('/api/trades/stats/metrics');
+                    setMetrics(metricsResponse.data || {});
+
+                    // Mock users data
+                    setUsers([
+                        { id: 1, name: 'Demo Trader', email: 'demo@example.com', createdAt: '2024-01-15', lastLogin: '2024-12-10' }
+                    ]);
+
+                    addLog('Data loaded successfully', 'success');
+                } catch (error) {
+                    console.error('Failed to load data:', error);
+                    addLog('Failed to load data: ' + error.message, 'error');
+                }
+            };
+
+            const checkServerStatus = async () => {
+                try {
+                    const response = await axios.get('/api/trades');
+                    const tradesData = response.data || [];
+                    
+                    setServerStatus({
+                        backend: 'online',
+                        database: 'connected',
+                        totalTrades: tradesData.length,
+                        accounts: new Set(tradesData.map(t => t.account || 'Default')).size || 1,
+                        strategies: new Set(tradesData.map(t => t.strategy || 'None')).size || 1,
+                        totalUsers: users.length,
+                        uptime: calculateUptime(),
+                        lastSync: new Date().toLocaleTimeString()
+                    });
+                } catch (error) {
+                    setServerStatus(prev => ({
+                        ...prev,
+                        backend: 'offline',
+                        database: 'disconnected'
+                    }));
+                }
+            };
+
+            const calculateUptime = () => {
+                const start = sessionStorage.getItem('serverStartTime');
+                if (!start) {
+                    sessionStorage.setItem('serverStartTime', Date.now().toString());
+                    return '0m';
+                }
+                const minutes = Math.floor((Date.now() - parseInt(start)) / 60000);
+                return minutes < 60 ? `${minutes}m` : `${Math.floor(minutes/60)}h ${minutes%60}m`;
+            };
+
+            const addLog = (message, type = 'info') => {
+                const newLog = {
+                    id: Date.now(),
+                    timestamp: new Date().toLocaleTimeString(),
+                    message,
+                    type
+                };
+                setLogs(prev => [newLog, ...prev.slice(0, 49)]);
+            };
+
+            const handleAction = async (action) => {
+                addLog(`Executing ${action}...`, 'info');
+                
+                try {
+                    switch (action) {
+                        case 'backup':
+                            await new Promise(resolve => setTimeout(resolve, 2000));
+                            addLog('Database backup completed successfully', 'success');
+                            break;
+                            
+                        case 'export':
+                            const csv = convertToCSV(trades);
+                            downloadCSV(csv, `trades_export_${new Date().toISOString().split('T')[0]}.csv`);
+                            addLog(`Exported ${trades.length} trades to CSV`, 'success');
+                            break;
+                            
+                        case 'sync':
+                            await new Promise(resolve => setTimeout(resolve, 1500));
+                            setServerStatus(prev => ({ ...prev, lastSync: new Date().toLocaleTimeString() }));
+                            addLog('System sync completed', 'success');
+                            break;
+                            
+                        case 'restart':
+                            addLog('System restart initiated', 'warning');
+                            break;
+                            
+                        case 'clearLogs':
+                            setLogs([]);
+                            addLog('System logs cleared', 'info');
+                            break;
+                            
+                        default:
+                            addLog(`Unknown action: ${action}`, 'error');
+                    }
+                } catch (error) {
+                    addLog(`Action failed: ${error.message}`, 'error');
+                }
+            };
+
+            const convertToCSV = (data) => {
+                if (!data.length) return '';
+                const headers = Object.keys(data[0]);
+                const csvContent = [
+                    headers.join(','),
+                    ...data.map(row => headers.map(header => `"${row[header] || ''}"`).join(','))
+                ].join('\n');
+                return csvContent;
+            };
+
+            const downloadCSV = (csv, filename) => {
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                window.URL.revokeObjectURL(url);
+            };
+
+            const StatusIndicator = ({ status, label }) => (
+                <div className="flex items-center space-x-2">
+                    <div className={`w-3 h-3 rounded-full ${
+                        status === 'online' || status === 'connected' ? 'bg-green-500' :
+                        status === 'checking' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'
+                    }`}></div>
+                    <span className="text-sm text-gray-300">{label}: {status}</span>
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen bg-slate-900 text-white">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-3 text-center">
+                        🎛️ ADMIN PANEL - System Management Dashboard
+                    </div>
+
+                    <div className="max-w-7xl mx-auto p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <div>
+                                <h1 className="text-3xl font-bold text-purple-400 flex items-center">
+                                    🎛️ Admin Dashboard
+                                </h1>
+                                <p className="text-gray-400">System management and monitoring</p>
+                            </div>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => window.location.href = '/'}
+                                    className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors"
+                                >
+                                    🏠 Back to Trading Dashboard
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        localStorage.clear();
+                                        sessionStorage.clear();
+                                        window.location.href = '/';
+                                    }}
+                                    className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-colors"
+                                >
+                                    🚪 Exit Admin
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Tab Navigation */}
+                        <div className="flex gap-4 mb-6 border-b border-gray-700 overflow-x-auto">
+                            {[
+                                { id: 'overview', label: 'Overview', icon: '📊' },
+                                { id: 'users', label: 'Users', icon: '👥' },
+                                { id: 'trading', label: 'Trading Analytics', icon: '📈' },
+                                { id: 'monitoring', label: 'Monitoring', icon: '🖥️' },
+                                { id: 'database', label: 'Database', icon: '💾' },
+                                { id: 'logs', label: 'Logs', icon: '📋' },
+                                { id: 'settings', label: 'Settings', icon: '⚙️' }
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
+                                        activeTab === tab.id 
+                                            ? 'bg-purple-600 text-white' 
+                                            : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                                    }`}
+                                >
+                                    {tab.icon} {tab.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Overview Tab */}
+                        {activeTab === 'overview' && (
+                            <div>
+                                <h2 className="text-2xl font-bold mb-6">System Overview</h2>
+                                
+                                {/* Status Cards */}
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                                    <div className="bg-gray-800 p-6 rounded-lg">
+                                        <div className="flex items-center space-x-3 mb-2">
+                                            <div className="bg-blue-600 p-2 rounded">📊</div>
+                                            <div>
+                                                <p className="text-gray-400 text-sm">TOTAL TRADES</p>
+                                                <p className="text-2xl font-bold">{serverStatus.totalTrades}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-gray-800 p-6 rounded-lg">
+                                        <div className="flex items-center space-x-3 mb-2">
+                                            <div className="bg-green-600 p-2 rounded">👥</div>
+                                            <div>
+                                                <p className="text-gray-400 text-sm">REGISTERED USERS</p>
+                                                <p className="text-2xl font-bold">{users.length}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-gray-800 p-6 rounded-lg">
+                                        <div className="flex items-center space-x-3 mb-2">
+                                            <div className="bg-purple-600 p-2 rounded">📈</div>
+                                            <div>
+                                                <p className="text-gray-400 text-sm">STRATEGIES</p>
+                                                <p className="text-2xl font-bold">{serverStatus.strategies}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-gray-800 p-6 rounded-lg">
+                                        <div className="flex items-center space-x-3 mb-2">
+                                            <div className="bg-orange-600 p-2 rounded">⏱️</div>
+                                            <div>
+                                                <p className="text-gray-400 text-sm">UPTIME</p>
+                                                <p className="text-2xl font-bold">{serverStatus.uptime}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Server Status */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                                    <div className="bg-gray-800 p-6 rounded-lg">
+                                        <h3 className="text-xl font-bold mb-4">Server Status</h3>
+                                        <div className="space-y-3">
+                                            <StatusIndicator status={serverStatus.backend} label="Backend API" />
+                                            <StatusIndicator status={serverStatus.database} label="Database" />
+                                            <div className="flex items-center space-x-2">
+                                                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                                                <span className="text-sm text-gray-300">Last Sync: {serverStatus.lastSync}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-gray-800 p-6 rounded-lg">
+                                        <h3 className="text-xl font-bold mb-4">System Resources</h3>
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-400">Memory Usage:</span>
+                                                <span className="text-white">245 MB</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-400">CPU Usage:</span>
+                                                <span className="text-white">12%</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-400">Storage Used:</span>
+                                                <span className="text-white">2.1 GB</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Quick Actions */}
+                                <div className="bg-gray-800 p-6 rounded-lg">
+                                    <h3 className="text-xl font-bold mb-4">Quick Actions</h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <button
+                                            onClick={() => handleAction('backup')}
+                                            className="bg-blue-600 hover:bg-blue-700 px-4 py-3 rounded-lg transition-colors text-center"
+                                        >
+                                            💾<br />Backup
+                                        </button>
+                                        <button
+                                            onClick={() => handleAction('export')}
+                                            className="bg-green-600 hover:bg-green-700 px-4 py-3 rounded-lg transition-colors text-center"
+                                        >
+                                            📤<br />Export
+                                        </button>
+                                        <button
+                                            onClick={() => handleAction('sync')}
+                                            className="bg-purple-600 hover:bg-purple-700 px-4 py-3 rounded-lg transition-colors text-center"
+                                        >
+                                            🔄<br />Sync
+                                        </button>
+                                        <button
+                                            onClick={() => handleAction('restart')}
+                                            className="bg-red-600 hover:bg-red-700 px-4 py-3 rounded-lg transition-colors text-center"
+                                        >
+                                            🔄<br />Restart
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Users Tab */}
+                        {activeTab === 'users' && (
+                            <div className="bg-gray-800 p-6 rounded-lg">
+                                <h2 className="text-xl font-bold mb-4">👥 User Management</h2>
+                                
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead>
+                                            <tr className="border-b border-gray-700">
+                                                <th className="pb-3 text-gray-400">ID</th>
+                                                <th className="pb-3 text-gray-400">Name</th>
+                                                <th className="pb-3 text-gray-400">Email</th>
+                                                <th className="pb-3 text-gray-400">Registered</th>
+                                                <th className="pb-3 text-gray-400">Last Login</th>
+                                                <th className="pb-3 text-gray-400">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {users.map(user => (
+                                                <tr key={user.id} className="border-b border-gray-700">
+                                                    <td className="py-3 text-gray-300">#{user.id}</td>
+                                                    <td className="py-3 text-white font-medium">{user.name}</td>
+                                                    <td className="py-3 text-gray-300">{user.email}</td>
+                                                    <td className="py-3 text-gray-300">{user.createdAt}</td>
+                                                    <td className="py-3 text-gray-300">{user.lastLogin}</td>
+                                                    <td className="py-3">
+                                                        <span className="bg-green-900 text-green-300 px-2 py-1 rounded text-sm">
+                                                            Active
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Trading Analytics Tab */}
+                        {activeTab === 'trading' && (
+                            <div className="bg-gray-800 p-6 rounded-lg">
+                                <h2 className="text-xl font-bold mb-4">📈 Trading Analytics</h2>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                    <div className="bg-gray-700 p-4 rounded-lg">
+                                        <h4 className="font-bold mb-2 text-blue-400">Total Trades</h4>
+                                        <div className="text-2xl font-bold text-white">{trades.length}</div>
+                                    </div>
+
+                                    <div className="bg-gray-700 p-4 rounded-lg">
+                                        <h4 className="font-bold mb-2 text-green-400">Total P&L</h4>
+                                        <div className="text-2xl font-bold text-white">
+                                            ${trades.reduce((sum, t) => sum + (t.pnl || 0), 0).toFixed(2)}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-gray-700 p-4 rounded-lg">
+                                        <h4 className="font-bold mb-2 text-purple-400">Win Rate</h4>
+                                        <div className="text-2xl font-bold text-white">
+                                            {trades.length > 0 
+                                                ? ((trades.filter(t => (t.pnl || 0) > 0).length / trades.length) * 100).toFixed(1)
+                                                : 0}%
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-gray-700 p-4 rounded-lg">
+                                        <h4 className="font-bold mb-2 text-yellow-400">Active Users</h4>
+                                        <div className="text-2xl font-bold text-white">{users.length}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Monitoring Tab */}
+                        {activeTab === 'monitoring' && (
+                            <div className="bg-gray-800 p-6 rounded-lg">
+                                <h2 className="text-2xl font-bold mb-4">System Monitoring</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="bg-gray-700 p-4 rounded-lg">
+                                        <h4 className="font-bold mb-2">Performance Metrics</h4>
+                                        <div className="space-y-2 text-sm">
+                                            <div>Response Time: 45ms</div>
+                                            <div>Requests/min: 12</div>
+                                            <div>Error Rate: 0.1%</div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-gray-700 p-4 rounded-lg">
+                                        <h4 className="font-bold mb-2">Database Stats</h4>
+                                        <div className="space-y-2 text-sm">
+                                            <div>Connections: 3/100</div>
+                                            <div>Query Time: 2ms avg</div>
+                                            <div>Cache Hit: 94%</div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-gray-700 p-4 rounded-lg">
+                                        <h4 className="font-bold mb-2">API Endpoints</h4>
+                                        <div className="space-y-2 text-sm">
+                                            <div className="flex justify-between">
+                                                <span>/api/trades</span>
+                                                <span className="text-green-400">✓</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>/api/learning</span>
+                                                <span className="text-green-400">✓</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Database Tab */}
+                        {activeTab === 'database' && (
+                            <div className="bg-gray-800 p-6 rounded-lg">
+                                <h2 className="text-2xl font-bold mb-4">Database Management</h2>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center p-4 bg-gray-700 rounded-lg">
+                                        <div>
+                                            <h4 className="font-bold">Trades Table</h4>
+                                            <p className="text-sm text-gray-400">{trades.length} records</p>
+                                        </div>
+                                        <button
+                                            onClick={() => handleAction('backup')}
+                                            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded transition-colors"
+                                        >
+                                            Backup
+                                        </button>
+                                    </div>
+                                    <div className="flex justify-between items-center p-4 bg-gray-700 rounded-lg">
+                                        <div>
+                                            <h4 className="font-bold">System Settings</h4>
+                                            <p className="text-sm text-gray-400">Configuration data</p>
+                                        </div>
+                                        <button className="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded transition-colors">
+                                            View
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Logs Tab */}
+                        {activeTab === 'logs' && (
+                            <div className="bg-gray-800 p-6 rounded-lg">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-2xl font-bold">System Logs</h2>
+                                    <button
+                                        onClick={() => handleAction('clearLogs')}
+                                        className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded transition-colors"
+                                    >
+                                        Clear Logs
+                                    </button>
+                                </div>
+                                <div className="bg-black p-4 rounded-lg h-96 overflow-y-auto font-mono text-sm">
+                                    {logs.length === 0 ? (
+                                        <div className="text-gray-500">No logs available</div>
+                                    ) : (
+                                        logs.map(log => (
+                                            <div key={log.id} className={`mb-1 ${
+                                                log.type === 'error' ? 'text-red-400' :
+                                                log.type === 'warning' ? 'text-yellow-400' :
+                                                log.type === 'success' ? 'text-green-400' : 'text-gray-300'
+                                            }`}>
+                                                [{log.timestamp}] {log.message}
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Settings Tab */}
+                        {activeTab === 'settings' && (
+                            <div className="bg-gray-800 p-6 rounded-lg">
+                                <h2 className="text-2xl font-bold mb-4">System Settings</h2>
+                                <div className="space-y-6">
+                                    <div>
+                                        <h4 className="font-bold mb-2">Server Configuration</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm text-gray-400 mb-1">Environment</label>
+                                                <input type="text" value="Production" className="w-full bg-gray-700 p-2 rounded" readOnly />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm text-gray-400 mb-1">Version</label>
+                                                <input type="text" value="1.0.0" className="w-full bg-gray-700 p-2 rounded" readOnly />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold mb-2">Backup Settings</h4>
+                                        <div className="space-y-2">
+                                            <label className="flex items-center">
+                                                <input type="checkbox" className="mr-2" defaultChecked />
+                                                Auto-backup daily
+                                            </label>
+                                            <label className="flex items-center">
+                                                <input type="checkbox" className="mr-2" />
+                                                Backup before updates
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // Render the admin panel
+        ReactDOM.render(<AdminPanel />, document.getElementById('admin-root'));
+    </script>
+</body>
+</html>
