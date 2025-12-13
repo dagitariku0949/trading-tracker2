@@ -26,10 +26,12 @@ export const AuthProvider = ({ children }) => {
     try {
       const token = localStorage.getItem('authToken');
       if (!token) {
+        console.log('No auth token found, user not logged in');
         setLoading(false);
         return;
       }
 
+      console.log('Checking auth status with token...');
       const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -38,14 +40,17 @@ export const AuthProvider = ({ children }) => {
 
       if (response.ok) {
         const result = await response.json();
+        console.log('Auth check successful:', result.data);
         setUser(result.data);
       } else {
+        console.log('Token is invalid, removing...');
         // Token is invalid, remove it
         localStorage.removeItem('authToken');
         setUser(null);
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+      console.error('Auth check failed (backend might be down):', error);
+      // If backend is down, still allow access to login page
       localStorage.removeItem('authToken');
       setUser(null);
     } finally {
