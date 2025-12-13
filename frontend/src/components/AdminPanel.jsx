@@ -171,34 +171,63 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
     setIsUploading(true);
     
     try {
-      const newContent = {
-        id: editingContent ? editingContent.id : Date.now(),
-        ...formData,
-        status: editingContent ? editingContent.status : 'Draft',
-        createdAt: editingContent ? editingContent.createdAt : new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
+      // Handle video uploads differently based on upload method
+      if (contentModalType === 'video' && formData.uploadMethod === 'file' && formData.videoFile) {
+        // File upload - use FormData and upload endpoint
+        const uploadFormData = new FormData();
+        uploadFormData.append('video', formData.videoFile);
+        uploadFormData.append('title', formData.title);
+        uploadFormData.append('description', formData.description);
+        uploadFormData.append('duration', formData.duration);
+        uploadFormData.append('category', formData.category);
+        uploadFormData.append('thumbnail', formData.thumbnail || '🎥');
 
-      // Add specific fields based on content type
-      if (contentModalType === 'course') {
-        newContent.students = editingContent ? editingContent.students : 0;
-        newContent.lessons = parseInt(formData.lessons) || 0;
-      } else if (contentModalType === 'video') {
-        newContent.views = editingContent ? editingContent.views : 0;
-        newContent.likes = editingContent ? editingContent.likes : 0;
-        newContent.uploadDate = editingContent ? editingContent.uploadDate : new Date().toISOString();
-      } else if (contentModalType === 'stream') {
-        newContent.registrations = editingContent ? editingContent.registrations : 0;
-      }
+        const response = await fetch('http://localhost:4000/api/learning/upload-video', {
+          method: 'POST',
+          body: uploadFormData
+        });
 
-      // Use context functions to manage content
-      if (editingContent) {
-        updateContent(contentModalType, editingContent.id, newContent);
+        const result = await response.json();
+        
+        if (result.success) {
+          addLog(`Video uploaded successfully: ${formData.title}`, 'success');
+          // Refresh learning content (this would typically be handled by context)
+          window.location.reload(); // Simple refresh for now
+        } else {
+          throw new Error(result.message || 'Upload failed');
+        }
       } else {
-        addContent(contentModalType, newContent);
+        // Regular content creation (URL-based videos, courses, streams, etc.)
+        const newContent = {
+          id: editingContent ? editingContent.id : Date.now(),
+          ...formData,
+          status: editingContent ? editingContent.status : 'Draft',
+          createdAt: editingContent ? editingContent.createdAt : new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        // Add specific fields based on content type
+        if (contentModalType === 'course') {
+          newContent.students = editingContent ? editingContent.students : 0;
+          newContent.lessons = parseInt(formData.lessons) || 0;
+        } else if (contentModalType === 'video') {
+          newContent.views = editingContent ? editingContent.views : 0;
+          newContent.likes = editingContent ? editingContent.likes : 0;
+          newContent.uploadDate = editingContent ? editingContent.uploadDate : new Date().toISOString();
+        } else if (contentModalType === 'stream') {
+          newContent.registrations = editingContent ? editingContent.registrations : 0;
+        }
+
+        // Use context functions to manage content
+        if (editingContent) {
+          updateContent(contentModalType, editingContent.id, newContent);
+        } else {
+          addContent(contentModalType, newContent);
+        }
+
+        addLog(`${editingContent ? 'Updated' : 'Created'} ${contentModalType}: ${formData.title}`, 'success');
       }
 
-      addLog(`${editingContent ? 'Updated' : 'Created'} ${contentModalType}: ${formData.title}`, 'success');
       setShowContentModal(false);
       setEditingContent(null);
       setFormData({});
@@ -1618,21 +1647,6 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
                         </select>
                       </div>
                     </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Video URL *</label>
-                      <input
-                        type="url"
-                        value={formData.video_url || ''}
-                        onChange={(e) => handleInputChange('video_url', e.target.value)}
-                        className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="https://www.youtube.com/embed/VIDEO_ID or direct video URL"
-                        required
-                      />
-                      <p className="text-sm text-gray-400 mt-1">
-                        For YouTube: Use embed URL format (youtube.com/embed/VIDEO_ID)
-                      </p>
-                    </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">Thumbnail Emoji</label>
@@ -1646,14 +1660,104 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
                       />
                     </div>
 
+                    {/* Upload Method Selection */}
+                    <div className="bg-slate-700 p-4 rounded-lg">
+                      <h4 className="font-bold text-white mb-3">📹 Choose Upload Method</h4>
+                      <div className="flex gap-4 mb-4">
+                        <button
+                          type="button"
+                          onClick={() => handleInputChange('uploadMethod', 'url')}
+                          className={`flex-1 px-4 py-3 rounded-lg transition-colors ${
+                            (formData.uploadMethod || 'url') === 'url'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-slate-600 text-gray-300 hover:bg-slate-500'
+                          }`}
+                        >
+                          🔗 Upload via URL
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleInputChange('uploadMethod', 'file')}
+                          className={`flex-1 px-4 py-3 rounded-lg transition-colors ${
+                            formData.uploadMethod === 'file'
+                              ? 'bg-green-600 text-white'
+                              : 'bg-slate-600 text-gray-300 hover:bg-slate-500'
+                          }`}
+                        >
+                          💻 Upload from Computer
+                        </button>
+                      </div>
+
+                      {/* URL Upload Option */}
+                      {(formData.uploadMethod || 'url') === 'url' && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">Video URL *</label>
+                          <input
+                            type="url"
+                            value={formData.video_url || ''}
+                            onChange={(e) => handleInputChange('video_url', e.target.value)}
+                            className="w-full px-4 py-3 bg-slate-600 border border-slate-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="https://www.youtube.com/embed/VIDEO_ID or direct video URL"
+                            required
+                          />
+                          <p className="text-sm text-gray-400 mt-1">
+                            For YouTube: Use embed URL format (youtube.com/embed/VIDEO_ID)
+                          </p>
+                        </div>
+                      )}
+
+                      {/* File Upload Option */}
+                      {formData.uploadMethod === 'file' && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">Video File *</label>
+                          <div className="border-2 border-dashed border-slate-500 rounded-lg p-6 text-center">
+                            <input
+                              type="file"
+                              accept="video/*"
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  handleInputChange('videoFile', file);
+                                  handleInputChange('fileName', file.name);
+                                  handleInputChange('fileSize', (file.size / (1024 * 1024)).toFixed(2) + ' MB');
+                                }
+                              }}
+                              className="hidden"
+                              id="video-file-input"
+                              required
+                            />
+                            <label
+                              htmlFor="video-file-input"
+                              className="cursor-pointer flex flex-col items-center"
+                            >
+                              <div className="text-4xl mb-2">📁</div>
+                              <div className="text-white font-medium mb-1">
+                                {formData.fileName || 'Click to select video file'}
+                              </div>
+                              <div className="text-sm text-gray-400">
+                                {formData.fileSize || 'Max size: 500MB • Supported: MP4, AVI, MOV, WMV'}
+                              </div>
+                            </label>
+                          </div>
+                          {formData.fileName && (
+                            <div className="mt-2 p-3 bg-green-900 border border-green-700 rounded-lg">
+                              <div className="text-green-300 text-sm">
+                                ✅ File selected: {formData.fileName} ({formData.fileSize})
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
                     <div className="bg-blue-900 border border-blue-700 p-4 rounded-lg">
-                      <h4 className="font-bold text-blue-300 mb-2">📹 Video Upload Instructions</h4>
+                      <h4 className="font-bold text-blue-300 mb-2">📹 Video Upload Options</h4>
                       <div className="text-sm text-blue-200 space-y-1">
-                        <p>• Upload your video to YouTube, Vimeo, or any video hosting platform</p>
-                        <p>• Copy the embed URL (for YouTube: youtube.com/embed/VIDEO_ID)</p>
-                        <p>• Paste the URL in the "Video URL" field above</p>
-                        <p>• Fill in the duration, category, and description</p>
-                        <p>• Click "Create Video" to add it to your learning platform</p>
+                        <p><strong>🔗 URL Upload:</strong> Use YouTube, Vimeo, or any video hosting platform</p>
+                        <p><strong>💻 File Upload:</strong> Upload video files directly from your computer</p>
+                        <p>• Supported formats: MP4, AVI, MOV, WMV, WebM</p>
+                        <p>• Maximum file size: 500MB</p>
+                        <p>• Files are stored securely on your server</p>
                       </div>
                     </div>
                   </>
@@ -1719,9 +1823,12 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
                   <button
                     type="submit"
                     className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white py-3 rounded-lg font-semibold transition-colors"
-                    disabled={isUploading || !formData.title || !formData.description}
+                    disabled={isUploading || !formData.title || !formData.description || 
+                      (contentModalType === 'video' && 
+                       ((formData.uploadMethod || 'url') === 'url' && !formData.video_url) ||
+                       (formData.uploadMethod === 'file' && !formData.videoFile))}
                   >
-                    {isUploading ? 'Processing...' : 
+                    {isUploading ? (contentModalType === 'video' && formData.uploadMethod === 'file' ? 'Uploading...' : 'Processing...') : 
                      `${editingContent ? 'Update' : 'Create'} ${contentModalType.charAt(0).toUpperCase() + contentModalType.slice(1)}`}
                   </button>
                 </div>

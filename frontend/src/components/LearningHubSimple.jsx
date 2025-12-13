@@ -311,6 +311,15 @@ const LearningHubSimple = ({ onBack }) => {
                           allowFullScreen
                           title={selectedVideo.title}
                         ></iframe>
+                      ) : selectedVideo.video_url && selectedVideo.video_url.startsWith('/uploads/') ? (
+                        <video
+                          src={`http://localhost:4000${selectedVideo.video_url}`}
+                          className="w-full h-full rounded-lg"
+                          controls
+                          title={selectedVideo.title}
+                        >
+                          Your browser does not support the video tag.
+                        </video>
                       ) : selectedVideo.video_url && selectedVideo.video_url.startsWith('http') ? (
                         <video
                           src={selectedVideo.video_url}

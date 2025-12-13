@@ -1,5 +1,40 @@
 const express = require('express')
+const multer = require('multer')
+const path = require('path')
+const fs = require('fs')
 const router = express.Router()
+
+// Configure multer for video file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, '../uploads/videos')
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true })
+    }
+    cb(null, uploadDir)
+  },
+  filename: function (req, file, cb) {
+    // Generate unique filename with timestamp
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    cb(null, 'video-' + uniqueSuffix + path.extname(file.originalname))
+  }
+})
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 500 * 1024 * 1024 // 500MB limit
+  },
+  fileFilter: function (req, file, cb) {
+    // Check if file is a video
+    if (file.mimetype.startsWith('video/')) {
+      cb(null, true)
+    } else {
+      cb(new Error('Only video files are allowed!'), false)
+    }
+  }
+})
 // Database connection (using in-memory for now, but structured for easy PostgreSQL migration)
 class LearningDatabase {
   constructor() {
@@ -361,6 +396,54 @@ router.get('/published', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Failed to fetch published content' 
+    })
+  }
+})
+
+// Video file upload endpoint
+router.post('/upload-video', upload.single('video'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No video file provided'
+      })
+    }
+
+    // Generate video URL for the uploaded file
+    const videoUrl = `/uploads/videos/${req.file.filename}`
+    
+    // Get video metadata from request body
+    const { title, description, duration, category, thumbnail } = req.body
+    
+    // Create video entry
+    const newVideo = {
+      title: title || req.file.originalname,
+      description: description || 'Uploaded video',
+      duration: duration || '0:00',
+      category: category || 'General',
+      thumbnail: thumbnail || '🎥',
+      video_url: videoUrl,
+      file_info: {
+        originalName: req.file.originalname,
+        filename: req.file.filename,
+        size: req.file.size,
+        mimetype: req.file.mimetype
+      }
+    }
+    
+    const createdVideo = await learningDb.createVideo(newVideo)
+    
+    res.status(201).json({
+      success: true,
+      data: createdVideo,
+      message: 'Video uploaded successfully'
+    })
+  } catch (error) {
+    console.error('Error uploading video:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload video: ' + error.message
     })
   }
 })
