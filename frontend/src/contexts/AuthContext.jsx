@@ -75,6 +75,8 @@ export const AuthProvider = ({ children }) => {
 
       if (result.success) {
         localStorage.setItem('authToken', result.data.token);
+        localStorage.setItem('userData', JSON.stringify(result.data.user));
+        localStorage.setItem('loginTime', new Date().toISOString());
         setUser(result.data.user);
         return { success: true, user: result.data.user };
       } else {
@@ -124,6 +126,10 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
+    localStorage.removeItem('loginTime');
+    localStorage.removeItem('adminLogs');
+    localStorage.removeItem('adminUsers');
     setUser(null);
     setError(null);
   };

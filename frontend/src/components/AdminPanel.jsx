@@ -13,6 +13,15 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
   const [selectedUserTrades, setSelectedUserTrades] = useState(null);
   const [showTradesModal, setShowTradesModal] = useState(false);
 
+  // Get auth context for user management
+  const { 
+    user: currentUser, 
+    getUsers, 
+    updateUser, 
+    deleteUser, 
+    resetUserPassword 
+  } = useAuth();
+
   // Learning content from context
   let learningContent, addContent, updateContent, deleteContent, publishContent, unpublishContent, resetToDefaults;
   
@@ -42,33 +51,58 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
+    // Load persisted data first
+    loadPersistedData();
+    // Then try to load from backend
     loadUsers();
     loadTradingSummary();
     const interval = setInterval(checkServerStatus, 5000);
     return () => clearInterval(interval);
   }, []);
 
+  const loadPersistedData = () => {
+    try {
+      // Load persisted users
+      const savedUsers = localStorage.getItem('adminUsers');
+      if (savedUsers) {
+        setUsers(JSON.parse(savedUsers));
+        addLog('📂 Loaded persisted user data', 'info');
+      }
+    } catch (error) {
+      console.error('Failed to load persisted data:', error);
+    }
+  };
+
   const loadUsers = async () => {
     try {
-      // Mock user data for demo
-      const mockUsers = [
-        {
-          userId: 1,
-          name: 'Demo Trader',
-          email: 'demo@example.com',
-          role: 'user',
-          totalTrades: trades.length,
-          totalPnL: trades.reduce((sum, t) => sum + (t.pnl || 0), 0).toFixed(2),
-          winRate: trades.length > 0 ? ((trades.filter(t => (t.pnl || 0) > 0).length / trades.length) * 100).toFixed(1) : '0',
-          status: 'active',
-          accountBalance: '10000.00',
-          lastTradeDate: trades.length > 0 ? trades[0].entry_date : new Date().toISOString()
-        }
-      ];
-      setUsers(mockUsers);
-      addLog('Users loaded successfully', 'success');
+      addLog('Loading users from backend...', 'info');
+      const result = await getUsers();
+      
+      if (result.success) {
+        setUsers(result.data);
+        // Persist users to localStorage as backup
+        localStorage.setItem('adminUsers', JSON.stringify(result.data));
+        addLog(`✅ Loaded ${result.data.length} users from backend`, 'success');
+      } else {
+        // Fallback to mock data if backend fails
+        const mockUsers = [
+          {
+            id: 1,
+            name: 'Demo Trader',
+            email: 'demo@example.com',
+            role: 'user',
+            isVerified: true,
+            createdAt: new Date().toISOString(),
+            lastLogin: new Date().toISOString()
+          }
+        ];
+        setUsers(mockUsers);
+        addLog('⚠️ Using mock user data (backend unavailable)', 'error');
+      }
     } catch (error) {
-      addLog('Failed to load users: ' + error.message, 'error');
+      addLog('❌ Failed to load users: ' + error.message, 'error');
+      // Fallback to empty array
+      setUsers([]);
     }
   };
 
@@ -162,8 +196,26 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
 
   const addLog = (message, type = 'info') => {
     const timestamp = new Date().toLocaleTimeString();
-    setLogs(prev => [...prev.slice(-49), { timestamp, message, type }]);
+    const newLog = { timestamp, message, type };
+    setLogs(prev => {
+      const updatedLogs = [...prev.slice(-49), newLog];
+      // Persist logs to localStorage
+      localStorage.setItem('adminLogs', JSON.stringify(updatedLogs));
+      return updatedLogs;
+    });
   };
+
+  // Load persisted logs on component mount
+  useEffect(() => {
+    const savedLogs = localStorage.getItem('adminLogs');
+    if (savedLogs) {
+      try {
+        setLogs(JSON.parse(savedLogs));
+      } catch (error) {
+        console.error('Failed to load saved logs:', error);
+      }
+    }
+  }, []);
 
   const checkServerStatus = async () => {
     try {
@@ -337,7 +389,14 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
           )}
 
           {activeTab === 'users' && (
-            <UserManagementTab />
+            <UserManagementTab 
+              getUsers={getUsers}
+              updateUser={updateUser}
+              deleteUser={deleteUser}
+              resetUserPassword={resetUserPassword}
+              addLog={addLog}
+              currentUser={currentUser}
+            />
           )}
 
           {activeTab === 'learning' && (
