@@ -128,8 +128,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userData');
     localStorage.removeItem('loginTime');
-    localStorage.removeItem('adminLogs');
-    localStorage.removeItem('adminUsers');
+
     setUser(null);
     setError(null);
   };
@@ -208,77 +207,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Admin functions
-  const getUsers = async () => {
-    try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`${API_BASE_URL}/api/auth/admin/users`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
 
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      return { success: false, message: 'Failed to fetch users' };
-    }
-  };
-
-  const updateUser = async (userId, updates) => {
-    try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`${API_BASE_URL}/api/auth/admin/users/${userId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(updates)
-      });
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      return { success: false, message: 'Failed to update user' };
-    }
-  };
-
-  const deleteUser = async (userId) => {
-    try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`${API_BASE_URL}/api/auth/admin/users/${userId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      return { success: false, message: 'Failed to delete user' };
-    }
-  };
-
-  const resetUserPassword = async (userId, newPassword) => {
-    try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`${API_BASE_URL}/api/auth/admin/users/${userId}/reset-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ newPassword })
-      });
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      return { success: false, message: 'Failed to reset password' };
-    }
-  };
 
   const value = {
     user,
@@ -291,14 +220,8 @@ export const AuthProvider = ({ children }) => {
     resetPassword,
     updateProfile,
     checkAuthStatus,
-    // Admin functions
-    getUsers,
-    updateUser,
-    deleteUser,
-    resetUserPassword,
     // Helper functions
-    isAuthenticated: !!user,
-    isAdmin: user?.role === 'admin'
+    isAuthenticated: !!user
   };
 
   return (

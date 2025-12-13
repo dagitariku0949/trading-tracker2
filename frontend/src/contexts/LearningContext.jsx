@@ -229,7 +229,7 @@ export const LearningProvider = ({ children }) => {
     return published;
   };
 
-  // Admin functions for managing content
+  // Functions for managing content
   const addContent = async (type, content) => {
     try {
       console.log('Adding content:', { type, content });

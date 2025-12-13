@@ -2,7 +2,6 @@ import React from 'react'
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import Dashboard from './pages/Dashboard'
-import AdminPage from './pages/AdminPage'
 import LoginPage from './pages/LoginPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
@@ -48,12 +47,6 @@ export default function App() {
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Dashboard />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/admin" element={
-              <ProtectedRoute requireAdmin={true}>
-                <AdminPage />
               </ProtectedRoute>
             } />
             

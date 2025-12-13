@@ -236,8 +236,8 @@ const LoginPage = () => {
         <div className="mt-6 bg-yellow-900 border border-yellow-700 rounded-lg p-4">
           <h3 className="text-yellow-300 font-bold mb-2">🔑 Demo Credentials</h3>
           <div className="text-yellow-200 text-sm space-y-1">
-            <p><strong>Admin Account:</strong></p>
-            <p>Email: admin@tradingdashboard.com</p>
+            <p><strong>Demo Account:</strong></p>
+            <p>Email: demo@tradingdashboard.com</p>
             <p>Password: password</p>
           </div>
         </div>
