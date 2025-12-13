@@ -18,10 +18,7 @@ import LearningHub from './components/LearningHubSimple'
 import { LearningProvider } from './contexts/LearningContext'
 
 export default function App(){
-  // FORCE AUTHENTICATION - NO LOGIN SYSTEM
-  const [isUserAuthenticated, setIsUserAuthenticated] = useState(true)
   const [currentUser, setCurrentUser] = useState({ name: 'Trader', email: 'trader@example.com' })
-  const [showLanding, setShowLanding] = useState(false)
   const [showLearning, setShowLearning] = useState(false)
   
 
@@ -71,11 +68,10 @@ export default function App(){
   }
 
   useEffect(() => {
-    // FORCE AUTHENTICATION - NO CHECKS
+    // Set default user
     const defaultUser = { name: 'Trader', email: 'trader@example.com' }
     setCurrentUser(defaultUser)
-    setIsUserAuthenticated(true)
-    localStorage.setItem('userToken', 'auto-authenticated')
+    localStorage.setItem('userToken', 'direct-access')
     localStorage.setItem('userData', JSON.stringify(defaultUser))
     
     // Load starting balance from localStorage first
@@ -100,7 +96,8 @@ export default function App(){
   }, [])
 
   const handleUserLogout = () => {
-    // Just refresh the page - no actual logout
+    // Clear data and refresh the page
+    localStorage.clear()
     window.location.reload()
   }
 
@@ -208,8 +205,6 @@ export default function App(){
   }
 
 
-
-  // NO LOGIN OR LANDING PAGE - DIRECT TO DASHBOARD
 
   if (showLearning) {
     console.log('RENDERING LEARNING HUB - showLearning is true');

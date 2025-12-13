@@ -3,8 +3,6 @@ const express = require('express')
 const app = express()
 const kiroRoutes = require('./routes/kiro')
 const tradesRoutes = require('./routes/trades')
-const adminRoutes = require('./routes/admin')
-const authRoutes = require('./routes/auth')
 const learningRoutes = require('./routes/learning')
 
 // CORS middleware
@@ -31,10 +29,8 @@ app.get('/', (req, res) => {
   })
 })
 
-app.use('/api/auth', authRoutes)
 app.use('/api/kiro', kiroRoutes)
 app.use('/api/trades', tradesRoutes)
-app.use('/api/admin', adminRoutes)
 app.use('/api/learning', learningRoutes)
 
 const port = process.env.PORT || 4000

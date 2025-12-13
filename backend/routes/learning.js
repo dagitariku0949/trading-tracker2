@@ -1,7 +1,5 @@
 const express = require('express')
 const router = express.Router()
-const ownerAuth = require('../middleware/ownerAuth')
-
 // Database connection (using in-memory for now, but structured for easy PostgreSQL migration)
 class LearningDatabase {
   constructor() {
@@ -337,8 +335,8 @@ router.get('/published', async (req, res) => {
   }
 })
 
-// Create new content (owner only)
-router.post('/content/:type', ownerAuth, async (req, res) => {
+// Create new content
+router.post('/content/:type', async (req, res) => {
   try {
     const { type } = req.params
     let newContent
@@ -377,8 +375,8 @@ router.post('/content/:type', ownerAuth, async (req, res) => {
   }
 })
 
-// Update content (owner only)
-router.put('/content/:type/:id', ownerAuth, async (req, res) => {
+// Update content
+router.put('/content/:type/:id', async (req, res) => {
   try {
     const { type, id } = req.params
     let updatedContent
@@ -424,8 +422,8 @@ router.put('/content/:type/:id', ownerAuth, async (req, res) => {
   }
 })
 
-// Delete content (owner only)
-router.delete('/content/:type/:id', ownerAuth, async (req, res) => {
+// Delete content
+router.delete('/content/:type/:id', async (req, res) => {
   try {
     const { type, id } = req.params
     let deleted

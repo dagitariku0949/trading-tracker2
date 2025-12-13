@@ -73,42 +73,49 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
 
   const loadTradingSummary = async () => {
     try {
-      const ownerToken = sessionStorage.getItem('ownerAuthToken');
-      const response = await axios.get('http://localhost:4000/api/auth/users/trading-summary', {
-        headers: {
-          'Authorization': `Bearer ${ownerToken}`
+      // Mock trading summary data since authentication is removed
+      const mockData = [
+        {
+          userId: 1,
+          name: 'Demo Trader',
+          email: 'demo@example.com',
+          totalTrades: trades.length,
+          totalPnL: trades.reduce((sum, t) => sum + (t.pnl || 0), 0).toFixed(2),
+          winRate: trades.length > 0 ? ((trades.filter(t => (t.pnl || 0) > 0).length / trades.length) * 100).toFixed(1) : '0',
+          accountBalance: '10000.00',
+          lastTradeDate: trades.length > 0 ? trades[0].entry_date : new Date().toISOString()
         }
-      });
+      ];
       
-      if (response.data.success) {
-        setTradingSummary(response.data.data);
-        addLog(`Loaded trading summary for ${response.data.data.length} users`, 'success');
-      }
+      setTradingSummary(mockData);
+      addLog(`Loaded trading summary for ${mockData.length} users`, 'success');
     } catch (error) {
-      addLog('Failed to load trading summary: ' + (error.response?.data?.message || error.message), 'error');
+      addLog('Failed to load trading summary: ' + error.message, 'error');
       console.error('Error loading trading summary:', error);
     }
   };
 
   const loadUserTrades = async (userId, userName) => {
     try {
-      const ownerToken = sessionStorage.getItem('ownerAuthToken');
-      const response = await axios.get(`http://localhost:4000/api/auth/users/${userId}/trades`, {
-        headers: {
-          'Authorization': `Bearer ${ownerToken}`
+      // Mock user trades data since authentication is removed
+      const mockTradesData = {
+        trades: trades.slice(0, 10), // Show first 10 trades as example
+        analytics: {
+          totalTrades: trades.length,
+          winRate: trades.length > 0 ? ((trades.filter(t => (t.pnl || 0) > 0).length / trades.length) * 100).toFixed(1) : '0',
+          totalPnL: trades.reduce((sum, t) => sum + (t.pnl || 0), 0).toFixed(2),
+          avgPnL: trades.length > 0 ? (trades.reduce((sum, t) => sum + (t.pnl || 0), 0) / trades.length).toFixed(2) : '0'
         }
-      });
+      };
       
-      if (response.data.success) {
-        setSelectedUserTrades({
-          user: { id: userId, name: userName },
-          ...response.data.data
-        });
-        setShowTradesModal(true);
-        addLog(`Loaded ${response.data.data.trades.length} trades for ${userName}`, 'success');
-      }
+      setSelectedUserTrades({
+        user: { id: userId, name: userName },
+        ...mockTradesData
+      });
+      setShowTradesModal(true);
+      addLog(`Loaded ${mockTradesData.trades.length} trades for ${userName}`, 'success');
     } catch (error) {
-      addLog('Failed to load user trades: ' + (error.response?.data?.message || error.message), 'error');
+      addLog('Failed to load user trades: ' + error.message, 'error');
       console.error('Error loading user trades:', error);
     }
   };
@@ -243,30 +250,21 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
 
   const loadUsers = async () => {
     try {
-      const ownerToken = sessionStorage.getItem('ownerAuthToken');
-      console.log('Owner token:', ownerToken); // Debug log
-      
-      if (!ownerToken) {
-        addLog('No owner token found', 'error');
-        return;
-      }
-
-      const response = await axios.get('http://localhost:4000/api/auth/users', {
-        headers: {
-          'Authorization': `Bearer ${ownerToken}`
+      // Mock users data since authentication is removed
+      const mockUsers = [
+        {
+          id: 1,
+          name: 'Demo Trader',
+          email: 'demo@example.com',
+          createdAt: new Date().toISOString(),
+          lastLogin: new Date().toISOString()
         }
-      });
+      ];
       
-      console.log('Users response:', response.data); // Debug log
-      
-      if (response.data.success) {
-        setUsers(response.data.users);
-        addLog(`Loaded ${response.data.users.length} registered users`, 'success');
-      } else {
-        addLog('Failed to load users: ' + response.data.message, 'error');
-      }
+      setUsers(mockUsers);
+      addLog(`Loaded ${mockUsers.length} registered users`, 'success');
     } catch (error) {
-      addLog('Failed to load users: ' + (error.response?.data?.message || error.message), 'error');
+      addLog('Failed to load users: ' + error.message, 'error');
       console.error('Error loading users:', error);
     }
   };
@@ -586,9 +584,8 @@ const AdminPanel = ({ onBackToDashboard, onLogout, trades = [], metrics = {} }) 
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
-                      const token = sessionStorage.getItem('ownerAuthToken');
-                      addLog(`Debug: Owner token = ${token ? 'exists' : 'missing'}`, 'info');
-                      console.log('Debug info:', { token, users: users.length });
+                      addLog(`Debug: Authentication bypassed - direct access mode`, 'info');
+                      console.log('Debug info:', { users: users.length, trades: trades.length });
                     }}
                     className="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded-lg transition-colors"
                   >
