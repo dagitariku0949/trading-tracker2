@@ -16,10 +16,11 @@ import TradeJournal from '../components/TradeJournal'
 import AfterTradeForm from '../components/AfterTradeForm'
 import PositionCalculator from '../components/PositionCalculator'
 import LearningHub from '../components/LearningHubSimple'
-import AdminPanel from '../components/AdminPanel'
+// import AdminPanel from '../components/AdminPanel' // Temporarily disabled due to syntax error
 
 export default function Dashboard(){
   const { user, logout, isAdmin } = useAuth()
+  const [currentUser, setCurrentUser] = useState(null)
   const [showLearning, setShowLearning] = useState(false)
   const [showAdmin, setShowAdmin] = useState(false)
   
@@ -269,12 +270,31 @@ export default function Dashboard(){
 
   if (showAdmin) {
     return (
-      <AdminPanel 
-        onBackToDashboard={() => setShowAdmin(false)}
-        onLogout={handleUserLogout}
-        trades={trades}
-        metrics={metrics}
-      />
+      <div className="min-h-screen bg-slate-900 text-white p-8">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-3xl font-bold mb-6">Admin Panel</h1>
+          <div className="bg-yellow-900 border border-yellow-700 rounded-lg p-4 mb-6">
+            <p className="text-yellow-200">
+              ⚠️ Admin Panel temporarily disabled due to syntax error. 
+              <br />Please fix AdminPanel.jsx to restore full functionality.
+            </p>
+          </div>
+          <div className="flex gap-4">
+            <button
+              onClick={() => setShowAdmin(false)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg"
+            >
+              Back to Dashboard
+            </button>
+            <button
+              onClick={handleUserLogout}
+              className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
     )
   }
 

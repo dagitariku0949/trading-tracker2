@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import api from '../api/client'
-import AdminPanel from '../components/AdminPanel'
+// import AdminPanel from '../components/AdminPanel' // Temporarily disabled due to syntax error
 import { LearningProvider } from '../contexts/LearningContext'
 
 export default function AdminPage() {
