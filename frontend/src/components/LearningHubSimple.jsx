@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLearning } from '../contexts/LearningContext';
 
 const LearningHubSimple = ({ onBack }) => {
   console.log('LearningHubSimple component is rendering!', new Date().toISOString());
@@ -6,8 +7,9 @@ const LearningHubSimple = ({ onBack }) => {
   const [activeCategory, setActiveCategory] = useState('courses');
   const [selectedVideo, setSelectedVideo] = useState(null);
 
-  // HARDCODED CONTENT - No API dependencies
-  const learningContent = {
+  // Get learning content from context (connected to backend API)
+  const { publishedContent, loading, error } = useLearning();
+  const learningContent = publishedContent || {
     courses: [
       {
         id: 1,
@@ -147,12 +149,18 @@ const LearningHubSimple = ({ onBack }) => {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* SUCCESS BANNER */}
-        <div className="bg-green-600 text-white p-4 rounded-lg mb-6 text-center">
-          <div className="text-xl font-bold">✅ SIMPLE VERSION WORKING - NO API DEPENDENCIES</div>
+        {/* API STATUS BANNER */}
+        <div className={`text-white p-4 rounded-lg mb-6 text-center ${
+          loading ? 'bg-blue-600' : error ? 'bg-red-600' : 'bg-green-600'
+        }`}>
+          <div className="text-xl font-bold">
+            {loading ? '🔄 LOADING CONTENT...' : 
+             error ? '❌ API ERROR - USING FALLBACK' : 
+             '✅ LIVE API CONNECTED'}
+          </div>
           <div className="text-sm mt-2">
             Courses Count: {learningContent.courses.length} | 
-            Source: Hardcoded Simple Component | 
+            Source: {loading ? 'Loading...' : error ? 'Fallback Data' : 'Live API'} | 
             Time: {new Date().toLocaleTimeString()}
           </div>
         </div>

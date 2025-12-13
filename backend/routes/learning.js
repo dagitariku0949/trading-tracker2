@@ -279,7 +279,37 @@ class LearningDatabase {
 
 const learningDb = new LearningDatabase()
 
-// Get all learning content (public)
+// Get all learning content (public) - Main endpoint the frontend expects
+router.get('/', async (req, res) => {
+  try {
+    const [courses, videos, liveStreams, resources] = await Promise.all([
+      learningDb.getAllCourses(),
+      learningDb.getAllVideos(),
+      learningDb.getAllStreams(),
+      learningDb.getAllResources()
+    ])
+
+    res.json({
+      success: true,
+      data: {
+        courses,
+        videos,
+        liveStreams,
+        resources
+      },
+      version: 'api-v1',
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Error fetching learning content:', error)
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch learning content' 
+    })
+  }
+})
+
+// Get all learning content (public) - Alternative endpoint
 router.get('/content', async (req, res) => {
   try {
     const [courses, videos, liveStreams, resources] = await Promise.all([
@@ -335,7 +365,47 @@ router.get('/published', async (req, res) => {
   }
 })
 
-// Create new content
+// Create new content - Main endpoint the frontend expects
+router.post('/', async (req, res) => {
+  try {
+    const { type, content } = req.body
+    let newContent
+
+    switch (type) {
+      case 'course':
+        newContent = await learningDb.createCourse(content)
+        break
+      case 'video':
+        newContent = await learningDb.createVideo(content)
+        break
+      case 'stream':
+        newContent = await learningDb.createStream(content)
+        break
+      case 'resource':
+        newContent = await learningDb.createResource(content)
+        break
+      default:
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid content type'
+        })
+    }
+
+    res.status(201).json({
+      success: true,
+      data: newContent,
+      message: `${type} created successfully`
+    })
+  } catch (error) {
+    console.error(`Error creating ${req.body.type}:`, error)
+    res.status(500).json({ 
+      success: false, 
+      message: `Failed to create ${req.body.type}` 
+    })
+  }
+})
+
+// Create new content - Alternative endpoint
 router.post('/content/:type', async (req, res) => {
   try {
     const { type } = req.params
@@ -375,7 +445,54 @@ router.post('/content/:type', async (req, res) => {
   }
 })
 
-// Update content
+// Update content - Main endpoint the frontend expects
+router.put('/', async (req, res) => {
+  try {
+    const { type, id, updates } = req.body
+    let updatedContent
+
+    switch (type) {
+      case 'course':
+        updatedContent = await learningDb.updateCourse(id, updates)
+        break
+      case 'video':
+        updatedContent = await learningDb.updateVideo(id, updates)
+        break
+      case 'stream':
+        updatedContent = await learningDb.updateStream(id, updates)
+        break
+      case 'resource':
+        updatedContent = await learningDb.updateResource(id, updates)
+        break
+      default:
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid content type'
+        })
+    }
+
+    if (!updatedContent) {
+      return res.status(404).json({
+        success: false,
+        message: `${type} not found`
+      })
+    }
+
+    res.json({
+      success: true,
+      data: updatedContent,
+      message: `${type} updated successfully`
+    })
+  } catch (error) {
+    console.error(`Error updating ${req.body.type}:`, error)
+    res.status(500).json({ 
+      success: false, 
+      message: `Failed to update ${req.body.type}` 
+    })
+  }
+})
+
+// Update content - Alternative endpoint
 router.put('/content/:type/:id', async (req, res) => {
   try {
     const { type, id } = req.params
@@ -422,7 +539,53 @@ router.put('/content/:type/:id', async (req, res) => {
   }
 })
 
-// Delete content
+// Delete content - Main endpoint the frontend expects
+router.delete('/', async (req, res) => {
+  try {
+    const { type, id } = req.query
+    let deleted
+
+    switch (type) {
+      case 'course':
+        deleted = await learningDb.deleteCourse(id)
+        break
+      case 'video':
+        deleted = await learningDb.deleteVideo(id)
+        break
+      case 'stream':
+        deleted = await learningDb.deleteStream(id)
+        break
+      case 'resource':
+        deleted = await learningDb.deleteResource(id)
+        break
+      default:
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid content type'
+        })
+    }
+
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: `${type} not found`
+      })
+    }
+
+    res.json({
+      success: true,
+      message: `${type} deleted successfully`
+    })
+  } catch (error) {
+    console.error(`Error deleting ${req.query.type}:`, error)
+    res.status(500).json({ 
+      success: false, 
+      message: `Failed to delete ${req.query.type}` 
+    })
+  }
+})
+
+// Delete content - Alternative endpoint
 router.delete('/content/:type/:id', async (req, res) => {
   try {
     const { type, id } = req.params
