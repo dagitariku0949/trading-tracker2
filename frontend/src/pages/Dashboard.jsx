@@ -113,20 +113,46 @@ export default function Dashboard(){
     }
   }, [trades])
 
-  // Hidden admin access - Press Ctrl+Shift+A with password
+  // Hidden admin access - Type "dagi" while holding Ctrl+Shift
   useEffect(() => {
+    let sequence = ''
+    let sequenceTimer = null
+    
     const handleKeyPress = (e) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'A') {
-        const password = prompt('Enter admin password:')
-        if (password === 'LEAP2024Admin!') {
-          setShowAdmin(true)
-        } else if (password !== null) {
-          alert('Invalid password')
+      if (e.ctrlKey && e.shiftKey) {
+        // Clear previous timer
+        if (sequenceTimer) clearTimeout(sequenceTimer)
+        
+        // Add key to sequence
+        sequence += e.key.toLowerCase()
+        
+        // Check if sequence matches "dagi"
+        if (sequence === 'dagi') {
+          const password = prompt('Enter admin password:')
+          if (password === 'LEAP2024Admin!') {
+            setShowAdmin(true)
+          } else if (password !== null) {
+            alert('Invalid password')
+          }
+          sequence = '' // Reset sequence
+        } else if (sequence.length >= 4 || !'dagi'.startsWith(sequence)) {
+          sequence = '' // Reset if wrong sequence or too long
         }
+        
+        // Reset sequence after 2 seconds of inactivity
+        sequenceTimer = setTimeout(() => {
+          sequence = ''
+        }, 2000)
+      } else {
+        sequence = '' // Reset if Ctrl+Shift not held
       }
     }
+    
     window.addEventListener('keydown', handleKeyPress)
-    return () => window.removeEventListener('keydown', handleKeyPress)
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress)
+      if (sequenceTimer) clearTimeout(sequenceTimer)
+    }
   }, [])
 
   const handleSaveSettings = (newBalance) => {
